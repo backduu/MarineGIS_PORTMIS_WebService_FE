@@ -16,7 +16,8 @@
     "pinia": "^3.0.4",
     "proj4": "^2.20.2",
     "proj4leaflet": "^1.0.2",
-    "vue": "^3.5.28"
+    "vue": "^3.5.28",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
