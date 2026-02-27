@@ -36,12 +36,12 @@ onMounted(() => {
       maxBoundsViscosity: 1.0, // 범위 밖으로 나가지 않도록 하는 강도 (1.0 = 완전 고정)
     });
 
-    // 1. 기본 배경 지도 레이어 추가 (OpenStreetMap)
+    // 기본 배경 지도 레이어 추가 (OpenStreetMap)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
-    // 2. WMS(Web Map Service) 레이어 추가 (예시: 해안선 데이터)
+    // WMS(Web Map Service) 레이어 추가 (예시: 해안선 데이터)
     L.tileLayer.wms('http://127.0.0.1:8020/geoserver/korea_coast/wms', {
       layers: 'korea_coast:all_countries_coastline_2025', // GeoServer에 설정된 레이어 이름
       format: 'image/png', // 이미지 포맷
