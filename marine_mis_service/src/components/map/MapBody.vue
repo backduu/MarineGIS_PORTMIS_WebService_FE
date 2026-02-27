@@ -6,11 +6,13 @@
 import { onMounted, ref, onBeforeUnmount } from 'vue';
 import L from 'leaflet'; // Leaflet 핵심 라이브러리
 import 'leaflet/dist/leaflet.css'; // Leaflet 기본 스타일 (마커, 팝업 등 표시용)
+import { useMapLayers } from '@/composables/useMapLayers';
 
 // template의 <div ref="mapContainer">에 접근하기 위한 ref 변수
 const mapContainer = ref<HTMLElement | null>(null);
 // Leaflet 지도 인스턴스를 저장할 변수
 let map: L.Map | null = null;
+let syncLayers: (() => void) | null = null;
 
 onMounted(() => {
   // 컴포넌트가 마운트되고 DOM 요소가 생성된 후 실행
@@ -41,14 +43,9 @@ onMounted(() => {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
-    // WMS(Web Map Service) 레이어 추가 (예시: 해안선 데이터)
-    L.tileLayer.wms('http://127.0.0.1:8020/geoserver/korea_coast/wms', {
-      layers: 'korea_coast:all_countries_coastline_2025', // GeoServer에 설정된 레이어 이름
-      format: 'image/png', // 이미지 포맷
-      transparent: true,    // 배경 투명화
-      version: '1.1.1',
-      attribution: 'Korea Coast WMS'
-    }).addTo(map);
+    // WMS 레이어 및 기타 레이어 관리를 위한 Composable 연결
+    const mapLayerManager = useMapLayers(map);
+    syncLayers = mapLayerManager.syncLayers;
   }
 });
 

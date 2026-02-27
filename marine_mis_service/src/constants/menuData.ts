@@ -2,6 +2,7 @@ export interface SubMenuItem {
   name: string;
   isToggleable?: boolean;
   isOn?: boolean;
+  layerId?: string; // 연결된 지도 레이어 ID
 }
 
 export interface MenuItem {
@@ -14,7 +15,7 @@ export const sidebarMenu: MenuItem[] = [
   {
     name: '지도 레이어 관리',
     subMenus: [
-      { name: '해안선 레이어', isToggleable: true, isOn: false },
+      { name: '해안선 레이어', isToggleable: true, isOn: false, layerId: 'korea_coastline' },
       '항로 레이어',
       '해저 지형 레이어'
     ],

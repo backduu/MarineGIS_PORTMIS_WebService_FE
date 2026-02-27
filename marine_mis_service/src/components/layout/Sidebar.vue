@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { sidebarMenu, type SubMenuItem } from '@/constants/menuData';
+import { useMapStore } from '@/store/useMapStore';
 
 /**
  * Sidebar.vue: 좌측 사이드바 메뉴 컴포넌트입니다.
@@ -8,6 +9,7 @@ import { sidebarMenu, type SubMenuItem } from '@/constants/menuData';
  */
 
 const menuItems = ref([...sidebarMenu]);
+const mapStore = useMapStore();
 
 const toggleMenu = (index: number) => {
   menuItems.value[index].isOpen = !menuItems.value[index].isOpen;
@@ -16,6 +18,12 @@ const toggleMenu = (index: number) => {
 const toggleLayer = (subMenu: any) => {
   if (typeof subMenu === 'object' && subMenu.isToggleable) {
     subMenu.isOn = !subMenu.isOn;
+    
+    // 연결된 레이어 ID가 있는 경우 스토어의 상태 업데이트
+    if (subMenu.layerId) {
+      mapStore.setLayerStatus(subMenu.layerId, subMenu.isOn);
+    }
+    
     /* todo: 레이어 on/off 기능 구현 */
     /*console.log(`${subMenu.name} is now ${subMenu.isOn ? 'ON' : 'OFF'}`);*/
   }
