@@ -60,6 +60,7 @@ export const useUserStore = defineStore('user', {
         this.isLoading = false;
       }
     },
+    // TODO 자동로그인 로직시 사용 예정
     // 특정 ID를 가진 사용자 데이터를 API로부터 가져오는 비동기 액션
     async fetchUser(userId: number = 1) {
       this.isLoading = true; // 로딩 시작
