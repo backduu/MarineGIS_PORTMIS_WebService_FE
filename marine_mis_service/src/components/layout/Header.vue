@@ -27,8 +27,10 @@ const closeLoginModal = () => {
 // 로그아웃 처리 함수
 const handleLogout = () => {
   userStore.clearUser();
-  router.push('/login');
+
+  router.push('/');
 }
+
 </script>
 
 <template>
