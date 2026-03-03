@@ -23,8 +23,7 @@ const toggleLayer = (subMenu: any) => {
     if (subMenu.layerId) {
       mapStore.setLayerStatus(subMenu.layerId, subMenu.isOn);
     }
-    
-    /* todo: 레이어 on/off 기능 구현 */
+
     /*console.log(`${subMenu.name} is now ${subMenu.isOn ? 'ON' : 'OFF'}`);*/
   }
 };
@@ -32,7 +31,7 @@ const toggleLayer = (subMenu: any) => {
 const getSubMenuName = (subMenu: string | SubMenuItem) => {
   return typeof subMenu === 'string' ? subMenu : subMenu.name;
 };
-</script>
+</script>`
 
 <template>
   <!-- 좌측에 고정된 사이드바 영역 -->
