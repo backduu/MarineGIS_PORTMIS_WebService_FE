@@ -17,7 +17,7 @@ export const sidebarMenu: MenuItem[] = [
   {
     name: '해안선 레이어 관리',
     subMenus: [
-      { name: '수심별 해안선', isToggleable: true, isOn: false, type: 'style', value: 'analysis' },
+      { name: '해안선 분석', isToggleable: true, isOn: false, type: 'style', value: 'analysis' },
     ],
     isOpen: true
   },

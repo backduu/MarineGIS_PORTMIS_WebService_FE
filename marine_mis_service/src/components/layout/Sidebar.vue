@@ -23,7 +23,14 @@ const toggleMenu = (index: number) => {
 
 const handleRegionChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
-  mapStore.updateViewParams(target.value);
+  const value = target.value;
+  mapStore.updateViewParams(value);
+  
+  // 지역이 목록에 존재하는지 확인 후 위치 정보 요청
+  const isValidRegion = mapStore.regions.some(r => r.sggNam === value);
+  if (isValidRegion) {
+    mapStore.fetchRegionLocation(value);
+  }
 };
 
 const toggleLayer = (subMenu: any) => {

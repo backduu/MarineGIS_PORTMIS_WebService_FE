@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { regionService, type Region } from '@/services/regionService';
+import { regionService, type Region, type RegionLocation } from '@/services/regionService';
 
 export interface LayerConfig {
   id: string;
@@ -22,9 +22,17 @@ export const useMapStore = defineStore('map', () => {
   const currentSearchVal = ref('');
   const currentStyleMode = ref<'default' | 'analysis'>('default');
   const regions = ref<Region[]>([]);
+  const locationToZoom = ref<RegionLocation | null>(null);
 
   const fetchRegions = async () => {
     regions.value = await regionService.getRegions();
+  };
+
+  const fetchRegionLocation = async (sggNam: string) => {
+    const location = await regionService.getRegionLocation(sggNam);
+    if (location) {
+      locationToZoom.value = location;
+    }
   };
 
   const layers = ref<LayerConfig[]>([
@@ -46,7 +54,7 @@ export const useMapStore = defineStore('map', () => {
   ]);
 
   const updateViewParams = (searchVal?: string) => {
-    if (searchVal !== undefined) currentSearchVal.value = searchVal;
+    if (searchVal !== undefined) currentSearchVal.value = searchVal
 
     const newEnv = `search_val:${currentSearchVal.value}`;
     setLayerStatus('korea_coastline', { viewparams: '', env: newEnv });
@@ -92,6 +100,8 @@ export const useMapStore = defineStore('map', () => {
     updateViewParams,
     setStyleMode,
     regions,
-    fetchRegions
+    fetchRegions,
+    locationToZoom,
+    fetchRegionLocation
   };
 });

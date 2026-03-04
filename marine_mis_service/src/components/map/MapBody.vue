@@ -3,7 +3,7 @@
  * MapBody.vue: Leaflet 라이브러리를 사용하여 지도를 표시하고 관리하는 컴포넌트입니다.
  * React-Leaflet 대신 순수 Leaflet 객체를 사용하여 직접 제어합니다.
  */
-import { onMounted, ref, onBeforeUnmount } from 'vue';
+import { onMounted, ref, onBeforeUnmount, watch } from 'vue';
 import L from 'leaflet'; // Leaflet 핵심 라이브러리
 import 'leaflet/dist/leaflet.css'; // Leaflet 기본 스타일 (마커, 팝업 등 표시용)
 import { useMapLayers } from '@/composables/useMapLayers';
@@ -16,7 +16,47 @@ const mapStore = useMapStore();
 const userStore = useUserStore();
 
 // Leaflet 지도 인스턴스를 저장할 변수
-let map = null;
+let map: L.Map | null = null;
+
+/**
+ * GeoServer에서 반환하는 BBOX 문자열 "BOX(xmin ymin, xmax ymax)"을
+ * Leaflet LatLngBoundsExpression으로 변환합니다.
+ */
+const parseBBox = (bboxStr: string): L.LatLngBoundsExpression | null => {
+  if (!bboxStr) return null;
+  // "BOX(126.123 34.567, 127.890 35.123)" -> [126.123, 34.567, 127.890, 35.123]
+  const match = bboxStr.match(/BOX\(([^ ]+) ([^,]+),([^ ]+) ([^)]+)\)/);
+  if (match) {
+    const [, xmin, ymin, xmax, ymax] = match.map(Number);
+    // Leaflet은 [ [latMin, lngMin], [latMax, lngMax] ] 형식을 사용
+    return [
+      [ymin, xmin],
+      [ymax, xmax]
+    ];
+  }
+  return null;
+};
+
+// 지역 위치 정보가 변경되면 해당 위치로 지도 이동
+watch(() => mapStore.locationToZoom, (location) => {
+  if (location && map) {
+    const bounds = parseBBox(location.bbox);
+    if (bounds) {
+      map.fitBounds(bounds, { padding: [20, 20], maxZoom: 13 });
+    } else if (location.centerJson) {
+      // BBOX 파싱 실패 시 중심점(GeoJSON) 사용 시도
+      try {
+        const center = JSON.parse(location.centerJson);
+        if (center.type === 'Point' && Array.isArray(center.coordinates)) {
+          const [lng, lat] = center.coordinates;
+          map.setView([lat, lng], 13);
+        }
+      } catch (e) {
+        console.error('Failed to parse centerJson:', e);
+      }
+    }
+  }
+});
 
 onMounted(() => {
   // 컴포넌트가 마운트되고 DOM 요소가 생성된 후 실행
