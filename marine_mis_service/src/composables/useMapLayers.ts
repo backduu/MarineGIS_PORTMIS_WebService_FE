@@ -14,6 +14,7 @@ export function useMapLayers(mapInstance: L.Map | null) {
 
   /**
    * 레이어 상태에 따라 지도에 추가하거나 제거합니다.
+   * 또한 viewparams나 styles가 변경된 경우 레이어를 다시 로드합니다.
    */
   const syncLayers = () => {
     if (!mapInstance) return;
@@ -21,17 +22,29 @@ export function useMapLayers(mapInstance: L.Map | null) {
     mapStore.layers.forEach((config) => {
       const isCurrentlyOnMap = activeLayers.has(config.id);
 
-      if (config.isOn && !isCurrentlyOnMap) {
-        // 레이어를 켜야 하는데 지도에 없는 경우 추가
-        let newLayer: L.Layer;
-        if (config.type === 'wms') {
-          newLayer = GeoServerService.createWmsLayer(config);
-        } else {
-          newLayer = L.tileLayer(config.url, { attribution: config.attribution });
+      if (config.isOn) {
+        if (!isCurrentlyOnMap) {
+          // 레이어를 켜야 하는데 지도에 없는 경우 추가
+          let newLayer: L.Layer;
+          if (config.type === 'wms') {
+            newLayer = GeoServerService.createWmsLayer(config);
+          } else {
+            newLayer = L.tileLayer(config.url, { attribution: config.attribution });
+          }
+          
+          newLayer.addTo(mapInstance);
+          activeLayers.set(config.id, newLayer);
+        } else if (config.type === 'wms') {
+          // 이미 지도에 있는 WMS 레이어의 경우 viewparams나 styles가 변경되었을 수 있음
+          const existingLayer = activeLayers.get(config.id) as L.TileLayer.WMS;
+          if (existingLayer && existingLayer.setParams) {
+            existingLayer.setParams({
+              viewparams: config.viewparams || '',
+              styles: config.styles || '',
+              env: config.env || ''
+            } as any);
+          }
         }
-        
-        newLayer.addTo(mapInstance);
-        activeLayers.set(config.id, newLayer);
       } else if (!config.isOn && isCurrentlyOnMap) {
         // 레이어를 꺼야 하는데 지도에 있는 경우 제거
         const layerToRemove = activeLayers.get(config.id);

@@ -7,12 +7,16 @@ import { onMounted, ref, onBeforeUnmount } from 'vue';
 import L from 'leaflet'; // Leaflet 핵심 라이브러리
 import 'leaflet/dist/leaflet.css'; // Leaflet 기본 스타일 (마커, 팝업 등 표시용)
 import { useMapLayers } from '@/composables/useMapLayers';
+import { useMapStore } from '@/store/useMapStore';
+import { useUserStore } from '@/store/useUserStore';
 
 // template의 <div ref="mapContainer">에 접근하기 위한 ref 변수
 const mapContainer = ref<HTMLElement | null>(null);
+const mapStore = useMapStore();
+const userStore = useUserStore();
+
 // Leaflet 지도 인스턴스를 저장할 변수
-let map: L.Map | null = null;
-let syncLayers: (() => void) | null = null;
+let map = null;
 
 onMounted(() => {
   // 컴포넌트가 마운트되고 DOM 요소가 생성된 후 실행
@@ -29,7 +33,7 @@ onMounted(() => {
     ];
 
     // Leaflet 지도 초기화
-    map = L.map(mapContainer.value, {
+    const mapInstance = L.map(mapContainer.value, {
       center: position,       // 초기 중심점
       zoom: zoom,             // 초기 줌
       minZoom: 7,             // 최소 축소 레벨
@@ -37,22 +41,22 @@ onMounted(() => {
       maxBounds: koreaBounds, // 이동 가능 범위 제한
       maxBoundsViscosity: 1.0, // 범위 밖으로 나가지 않도록 하는 강도 (1.0 = 완전 고정)
     });
+    map = mapInstance;
 
     // 기본 배경 지도 레이어 추가 (OpenStreetMap)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+    }).addTo(mapInstance);
 
     // WMS 레이어 및 기타 레이어 관리를 위한 Composable 연결
-    const mapLayerManager = useMapLayers(map);
-    syncLayers = mapLayerManager.syncLayers;
+    useMapLayers(mapInstance);
   }
 });
 
 // 컴포넌트가 소멸되기 직전에 호출 (메모리 누수 방지를 위한 지도 객체 제거)
 onBeforeUnmount(() => {
   if (map) {
-    map.remove(); // 지도 인스턴스 해제
+    (map as L.Map).remove(); // 지도 인스턴스 해제
   }
 });
 </script>
@@ -61,6 +65,29 @@ onBeforeUnmount(() => {
   <!-- 지도가 그려질 컨테이너 영역 -->
   <main class="flex-1 relative z-0">
     <div ref="mapContainer" style="height: 100%; width: 100%;"></div>
+
+    <!-- 우측 하단 플로팅 범례 (Legend) -->
+    <div v-if="mapStore.layers.find(l => l.id === 'korea_coastline')?.isOn" class="absolute bottom-8 right-4 z-[1000] bg-white p-4 rounded-lg shadow-xl border border-gray-200 text-xs w-48">
+      <h4 class="font-bold mb-2 border-b pb-1">해안선 범례</h4>
+      <div class="space-y-2">
+        <p class="text-[10px] text-gray-500 mb-1 italic">* 수심별 해안선 적용 중</p>
+        <div class="flex items-center gap-2">
+          <span class="w-4 h-0.5 bg-[#3b82f6]"></span>
+          <span>얕은 수심 (연청색)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-4 h-0.5 bg-[#1e3a8a]"></span>
+          <span>깊은 수심 (진청색)</span>
+        </div>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="w-4 h-0.5 bg-[#ef4444] border-t border-dashed"></span>
+          <span>강조 지역 (빨간 점선)</span>
+        </div>
+      </div>
+      <div v-if="mapStore.currentSearchVal" class="mt-2 pt-2 border-t text-green-600 font-semibold">
+        검색: '{{ mapStore.currentSearchVal }}'
+      </div>
+    </div>
   </main>
 </template>
 

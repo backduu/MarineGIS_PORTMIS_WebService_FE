@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { sidebarMenu, type SubMenuItem } from '@/constants/menuData';
 import { useMapStore } from '@/store/useMapStore';
+import { useUserStore } from '@/store/useUserStore';
 
 /**
  * Sidebar.vue: 좌측 사이드바 메뉴 컴포넌트입니다.
@@ -10,21 +11,43 @@ import { useMapStore } from '@/store/useMapStore';
 
 const menuItems = ref([...sidebarMenu]);
 const mapStore = useMapStore();
+const userStore = useUserStore();
+
+onMounted(() => {
+  // 초기 로드 시 필요한 작업이 있으면 정의 (현재는 토글 시 로딩으로 변경됨)
+});
 
 const toggleMenu = (index: number) => {
   menuItems.value[index].isOpen = !menuItems.value[index].isOpen;
 };
 
+const handleRegionChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  mapStore.updateViewParams(target.value);
+};
+
 const toggleLayer = (subMenu: any) => {
   if (typeof subMenu === 'object' && subMenu.isToggleable) {
-    subMenu.isOn = !subMenu.isOn;
-    
-    // 연결된 레이어 ID가 있는 경우 스토어의 상태 업데이트
-    if (subMenu.layerId) {
-      mapStore.setLayerStatus(subMenu.layerId, subMenu.isOn);
+    // 해안선 레이어(korea_coastline) 관련 기능의 경우 로그인 여부 확인
+    const isCoastlineRelated = subMenu.layerId === 'korea_coastline' || 
+                             subMenu.type === 'style';
+                             
+    if (isCoastlineRelated && !userStore.user) {
+      alert('해안선 관련 기능은 로그인 후 이용 가능합니다.');
+      return;
     }
 
-    /*console.log(`${subMenu.name} is now ${subMenu.isOn ? 'ON' : 'OFF'}`);*/
+    subMenu.isOn = !subMenu.isOn;
+
+    if (subMenu.type === 'style') {
+      mapStore.setStyleMode(subMenu.isOn ? 'analysis' : 'default');
+
+      if (subMenu.isOn) {
+        mapStore.fetchRegions();
+      }
+    }
+
+    console.log(`${subMenu.name} is now ${subMenu.isOn ? 'ON' : 'OFF'}`);
   }
 };
 
@@ -58,29 +81,50 @@ const getSubMenuName = (subMenu: string | SubMenuItem) => {
               <li 
                 v-for="subMenu in menu.subMenus" 
                 :key="getSubMenuName(subMenu)"
-                class="p-2 hover:bg-gray-200 rounded cursor-pointer text-gray-600 hover:text-gray-900 transition-colors duration-200 flex justify-between items-center"
-                @click="toggleLayer(subMenu)"
+                class="flex flex-col space-y-1"
               >
-                <span>{{ getSubMenuName(subMenu) }}</span>
-                <!-- Toggle Switch for Layer on/off -->
-                <div 
-                  v-if="typeof subMenu === 'object' && subMenu.isToggleable"
-                  class="relative inline-block w-10 h-5 transition duration-200 ease-in-out"
+                <div
+                  class="p-2 hover:bg-gray-200 rounded cursor-pointer text-gray-600 hover:text-gray-900 transition-colors duration-200 flex justify-between items-center"
+                  @click="toggleLayer(subMenu)"
                 >
+                  <span>{{ getSubMenuName(subMenu) }}</span>
+                  <!-- Toggle Switch for Layer on/off -->
+                  <div 
+                    v-if="typeof subMenu === 'object' && subMenu.isToggleable"
+                    class="relative inline-block w-10 h-5 transition duration-200 ease-in-out"
+                  >
+                    <input 
+                      type="checkbox" 
+                      :checked="subMenu.isOn" 
+                      class="opacity-0 w-0 h-0"
+                      readonly
+                    />
+                    <span 
+                      class="absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-full transition-colors duration-200"
+                      :class="subMenu.isOn ? 'bg-blue-500' : 'bg-gray-300'"
+                    ></span>
+                    <span 
+                      class="absolute left-1 bottom-1 bg-white w-3 h-3 rounded-full transition-transform duration-200 transform"
+                      :class="{ 'translate-x-5': subMenu.isOn }"
+                    ></span>
+                  </div>
+                </div>
+
+                <!-- 검색 가능 선택창: 수심별 해안선 메뉴가 켜져 있을 때만 표시 -->
+                <div v-if="typeof subMenu === 'object' && subMenu.type === 'style' && subMenu.isOn" class="px-2 pb-2">
                   <input 
-                    type="checkbox" 
-                    :checked="subMenu.isOn" 
-                    class="opacity-0 w-0 h-0"
-                    readonly
+                    type="text"
+                    list="region-list"
+                    class="w-full p-2 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="지역 검색/선택"
+                    :value="mapStore.currentSearchVal"
+                    @input="handleRegionChange"
                   />
-                  <span 
-                    class="absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-full transition-colors duration-200"
-                    :class="subMenu.isOn ? 'bg-blue-500' : 'bg-gray-300'"
-                  ></span>
-                  <span 
-                    class="absolute left-1 bottom-1 bg-white w-3 h-3 rounded-full transition-transform duration-200 transform"
-                    :class="{ 'translate-x-5': subMenu.isOn }"
-                  ></span>
+                  <datalist id="region-list">
+                    <option v-for="region in mapStore.regions" :key="region.id" :value="region.sggNam">
+                      {{ region.sggNam }}
+                    </option>
+                  </datalist>
                 </div>
               </li>
             </ul>

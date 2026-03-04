@@ -14,8 +14,11 @@ export const GeoServerService = {
       format: config.format || 'image/png',
       transparent: config.transparent !== undefined ? config.transparent : true,
       version: config.version || '1.1.1',
-      attribution: config.attribution || ''
-    });
+      attribution: config.attribution || '',
+      styles: config.styles || '',
+      viewparams: config.viewparams || '',
+      env: config.env || ''
+    } as L.WMSOptions);
   },
 
   /**
