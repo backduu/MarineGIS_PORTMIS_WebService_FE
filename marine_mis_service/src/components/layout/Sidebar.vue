@@ -33,6 +33,10 @@ const handleRegionChange = (event: Event) => {
   }
 };
 
+const clearSearch = () => {
+  mapStore.updateViewParams('');
+};
+
 const toggleLayer = (subMenu: any) => {
   if (typeof subMenu === 'object' && subMenu.isToggleable) {
     // 해안선 레이어(korea_coastline) 관련 기능의 경우 로그인 여부 확인
@@ -119,14 +123,26 @@ const getSubMenuName = (subMenu: string | SubMenuItem) => {
 
                 <!-- 검색 가능 선택창: 수심별 해안선 메뉴가 켜져 있을 때만 표시 -->
                 <div v-if="typeof subMenu === 'object' && subMenu.type === 'style' && subMenu.isOn" class="px-2 pb-2">
-                  <input 
-                    type="text"
-                    list="region-list"
-                    class="w-full p-2 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="지역 검색/선택"
-                    :value="mapStore.currentSearchVal"
-                    @input="handleRegionChange"
-                  />
+                  <div class="relative flex items-center">
+                    <input 
+                      type="text"
+                      list="region-list"
+                      class="w-full p-2 pr-8 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      placeholder="지역 검색/선택"
+                      :value="mapStore.currentSearchVal"
+                      @input="handleRegionChange"
+                    />
+                    <button 
+                      v-if="mapStore.currentSearchVal"
+                      class="absolute right-2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                      @click="clearSearch"
+                      aria-label="검색어 초기화"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
                   <datalist id="region-list">
                     <option v-for="region in mapStore.regions" :key="region.id" :value="region.sggNam">
                       {{ region.sggNam }}
