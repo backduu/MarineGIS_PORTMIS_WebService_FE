@@ -50,6 +50,21 @@ export const useMapStore = defineStore('map', () => {
       viewparams: '',
       env: '',
       styles: ''
+    },
+    {
+      id: 'coastline_popup',
+      name: '해안선 팝업 레이어',
+      layers: 'korea_coast:viewCoastline_popup',
+      format: 'image/png',
+      transparent: true,
+      version: '1.1.1',
+      attribution: 'Korea Coast Popup',
+      isOn: false,
+      type: 'wms',
+      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
+      viewparams: '',
+      env: '',
+      styles: ''
     }
   ]);
 
@@ -66,6 +81,9 @@ export const useMapStore = defineStore('map', () => {
     // 수심별 해안선 모드가 켜지면 레이어도 켬, 꺼지면 레이어도 끔
     const isOn = mode === 'analysis';
     setLayerStatus('korea_coastline', { styles: styleName, isOn });
+    
+    // 팝업용 SQL View 레이어도 함께 토글
+    setLayerStatus('coastline_popup', { isOn });
   };
 
   // Partial<LayerConfig>를 사용하여 원하는 필드만 넘길 수 있게 함.

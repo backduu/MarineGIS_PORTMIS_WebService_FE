@@ -10,10 +10,48 @@ import { useMapLayers } from '@/composables/useMapLayers';
 import { useMapStore } from '@/store/useMapStore';
 import { useUserStore } from '@/store/useUserStore';
 
+import { GeoServerService } from '@/services/geoServerService';
+
 // template의 <div ref="mapContainer">에 접근하기 위한 ref 변수
 const mapContainer = ref<HTMLElement | null>(null);
 const mapStore = useMapStore();
 const userStore = useUserStore();
+
+// Coastline popup handler
+const onMapClick = async (e: L.LeafletMouseEvent) => {
+  if (!map) return;
+  // 팝업 정보 조회를 위해 SQL View 레이어(coastline_popup)를 우선 사용합니다.
+  const coastlineLayer = mapStore.layers.find(l => l.id === 'coastline_popup') || 
+                         mapStore.layers.find(l => l.id === 'korea_coastline');
+  
+  if (!coastlineLayer || !coastlineLayer.isOn) return;
+  const point = map.mouseEventToContainerPoint(e.originalEvent);
+  const data = await GeoServerService.getFeatureInfo(map, coastlineLayer, e.latlng, point);
+  if (data && data.features && data.features.length > 0) {
+    const properties = data.features[0].properties;
+    L.popup()
+      .setLatLng(e.latlng)
+      .setContent(`
+        <div style="padding: 10px; min-width: 200px; font-family: sans-serif;">
+          <h4 style="margin: 0 0 10px 0; border-bottom: 1px solid #ddd; padding-bottom: 5px; color: #1e3a8a;">해안선 상세 정보</h4>
+          <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+            <tr><th style="text-align: left; padding: 2px 0; color: #666;">명칭:</th><td>${properties.nam_obj || '이름 없음'}</td></tr>
+            <tr><th style="text-align: left; padding: 2px 0; color: #666;">지역:</th><td>${properties.sgg_nam || '-'}</td></tr>
+            <tr><th style="text-align: left; padding: 2px 0; color: #666;">길이:</th><td>${properties.length ? properties.length.toFixed(2) + 'm' : '-'}</td></tr>
+            <tr><th style="text-align: left; padding: 2px 0; color: #666;">구분:</th>
+              <td>
+                <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; 
+                  ${properties.cat_coa === '11' ? 'background-color: #dcfce7; color: #15803d;' : 'background-color: #ffedd5; color: #9a3412;'}">
+                  ${properties.cat_coa === '11' ? '자연해안' : '인공해안'}
+                </span>
+              </td>
+            </tr>
+          </table>
+        </div>
+      `)
+      .openOn(map);
+  }
+};
 
 // Leaflet 지도 인스턴스를 저장할 변수
 let map: L.Map | null = null;
@@ -82,6 +120,9 @@ onMounted(() => {
       maxBoundsViscosity: 1.0, // 범위 밖으로 나가지 않도록 하는 강도 (1.0 = 완전 고정)
     });
     map = mapInstance;
+
+    // /* 백두현 */ 지도 클릭 이벤트 등록
+    map.on('click', onMapClick as L.LeafletEventHandlerFn);
 
     // 기본 배경 지도 레이어 추가 (OpenStreetMap)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
