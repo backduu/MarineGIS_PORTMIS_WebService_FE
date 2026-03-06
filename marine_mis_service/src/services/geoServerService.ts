@@ -31,7 +31,6 @@ export const GeoServerService = {
     latlng: L.LatLng,
     point: L.Point
   ): Promise<any> {
-    /* 백두현 */
     // GetFeatureInfo는 WMS 표준 인터페이스로, 이미지 내 특정 픽셀 좌표(X, Y)에 해당하는 속성 정보를 요청.
     const size = map.getSize();
     const bounds = map.getBounds();
@@ -46,18 +45,18 @@ export const GeoServerService = {
       TRANSPARENT: true,
       QUERY_LAYERS: config.layers,
       LAYERS: config.layers,
-      INFO_FORMAT: 'application/json',
+      INFO_FORMAT: 'application/json', /* 서버로부터 XML이 아닌 JSON 형태의 순수 데이터를 받아옵니다. */
       X: Math.floor(point.x),
       Y: Math.floor(point.y),
       SRS: 'EPSG:4326',
       WIDTH: size.x,
       HEIGHT: size.y,
-      BBOX: `${sw.lng},${sw.lat},${ne.lng},${ne.lat}`,
+      BBOX: `${sw.lng},${sw.lat},${ne.lng},${ne.lat}`, /* 현재 지도가 보여주고 있는 사각형 범위(Bounding Box)를 계산합니다. */
       FEATURE_COUNT: 1,
     };
 
     if (config.viewparams) {
-      params.VIEWPARAMS = config.viewparams;
+      params.VIEWPARAMS = config.viewparams; /* SQL View에 파라미터를 전달하기 위한 인자입니다. */
     }
 
     const queryString = Object.entries(params)
