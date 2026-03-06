@@ -27,8 +27,11 @@ const closeLoginModal = () => {
 // 로그아웃 처리 함수
 const handleLogout = () => {
   userStore.clearUser();
-  router.push('/');
+  // 로그아웃 시 토큰을 폐기처리합니다.
   localStorage.removeItem('accessToken');
+
+  // 로그아웃 후 뒤로가기 방지를 위해 replace 사용합니다.
+  router.replace('/');
 }
 
 </script>
