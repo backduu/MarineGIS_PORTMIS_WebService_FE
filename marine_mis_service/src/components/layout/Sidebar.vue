@@ -62,6 +62,17 @@ const toggleLayer = (subMenu: any) => {
   }
 };
 
+const handleIslandModeChange = (mode: 'all' | 'land' | 'island', subMenu: SubMenuItem) => {
+  if(!userStore.user) {
+    alert('해안선 관련 기능은 로그인 후 이용 가능합니다.');
+    return;
+  }
+
+  console.log('Island mode changing to:', mode);
+  mapStore.setIslandMode(mode);
+  subMenu.value = mode;
+}
+
 const getSubMenuName = (subMenu: string | SubMenuItem) => {
   return typeof subMenu === 'string' ? subMenu : subMenu.name;
 };
@@ -121,6 +132,7 @@ const getSubMenuName = (subMenu: string | SubMenuItem) => {
                   </div>
                 </div>
 
+
                 <!-- 검색 가능 선택창: 수심별 해안선 메뉴가 켜져 있을 때만 표시 -->
                 <div v-if="typeof subMenu === 'object' && subMenu.type === 'style' && subMenu.isOn" class="px-2 pb-2">
                   <div class="relative flex items-center">
@@ -149,6 +161,30 @@ const getSubMenuName = (subMenu: string | SubMenuItem) => {
                     </option>
                   </datalist>
                 </div>
+                <!-- 필터형 메뉴 아이템 -->
+                <div v-else-if="typeof subMenu === 'object' && subMenu.type === 'filter'" class="p-2">
+                  <div class="text-gray-600 font-medium mb-2">{{ subMenu.name }}</div>
+                  <div class="space-y-1">
+                    <label
+                        v-for="option in subMenu.options"
+                        :key="option.value"
+                        class="flex items-center space-x-2 text-xs cursor-pointer hover:bg-gray-50 p-1 rounded"
+                    >
+                      <input
+                          type="radio"
+                          :name="`${subMenu.name}-filter`"
+                          :value="option.value"
+                          :checked="mapStore.islandMode === option.value"
+                          @change="handleIslandModeChange(option.value as 'all' | 'land' | 'island', subMenu)"
+                          class="text-blue-600 focus:ring-blue-500 focus:ring-1"
+                      >
+                      <span class="text-gray-700">{{ option.label }}</span>
+                    </label>
+                  </div>
+                </div>
+
+
+
               </li>
             </ul>
           </transition>

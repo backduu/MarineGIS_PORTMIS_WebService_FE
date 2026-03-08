@@ -146,7 +146,6 @@ onBeforeUnmount(() => {
   <!-- 지도가 그려질 컨테이너 영역 -->
   <main class="flex-1 relative z-0">
     <div ref="mapContainer" style="height: 100%; width: 100%;"></div>
-
     <!-- 우측 하단 플로팅 범례 (Legend) -->
     <div v-if="mapStore.layers.find(l => l.id === 'korea_coastline')?.isOn" class="absolute bottom-8 right-4 z-[1000] bg-white p-4 rounded-lg shadow-xl border border-gray-200 text-xs w-48">
       <h4 class="font-bold mb-2 border-b pb-1">해안선 범례</h4>

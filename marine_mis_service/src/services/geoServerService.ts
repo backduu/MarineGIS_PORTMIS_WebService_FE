@@ -9,16 +9,32 @@ export const GeoServerService = {
    * LayerConfig 설정을 기반으로 Leaflet WMS 레이어 객체를 생성합니다.
    */
   createWmsLayer(config: LayerConfig): L.TileLayer.WMS {
-    return L.tileLayer.wms(config.url, {
+    // wms 옵션을 생성하여 CQL_FILTER가 있으면 해당 옵션에 추가합니다.
+    const wmsOptions: L.WMSOptions = {
       layers: config.layers,
       format: config.format || 'image/png',
       transparent: config.transparent !== undefined ? config.transparent : true,
       version: config.version || '1.1.1',
       attribution: config.attribution || '',
-      styles: config.styles || '',
-      viewparams: config.viewparams || '',
-      env: config.env || ''
-    } as L.WMSOptions);
+      styles: config.styles || ''
+    };
+
+    // GeoServer  확장 옵션들을 any로 캐스팅해서 추가합니다.
+    const extendedOptions = wmsOptions as any;
+
+    if(config.cqlFilter) {
+      (wmsOptions as any).CQL_FILTER = config.cqlFilter;
+    }
+
+    if(config.viewparams) {
+      (wmsOptions as any).VIEWPARAMS = config.viewparams;
+    }
+
+    if(config.env) {
+      (wmsOptions as any).ENV = config.env;
+    }
+
+    return L.tileLayer.wms(config.url, wmsOptions);
   },
 
   /**
@@ -53,10 +69,15 @@ export const GeoServerService = {
       HEIGHT: size.y,
       BBOX: `${sw.lng},${sw.lat},${ne.lng},${ne.lat}`, /* 현재 지도가 보여주고 있는 사각형 범위(Bounding Box)를 계산합니다. */
       FEATURE_COUNT: 1,
+      CQL_FILTER: config.cqlFilter || '',
     };
 
     if (config.viewparams) {
       params.VIEWPARAMS = config.viewparams; /* SQL View에 파라미터를 전달하기 위한 인자입니다. */
+    }
+
+    if (config.cqlFilter) {
+      params.CQL_FILTER = config.cqlFilter;
     }
 
     const queryString = Object.entries(params)

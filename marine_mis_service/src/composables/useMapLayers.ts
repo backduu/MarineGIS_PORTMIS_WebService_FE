@@ -37,12 +37,20 @@ export function useMapLayers(mapInstance: L.Map | null) {
         } else if (config.type === 'wms') {
           // 이미 지도에 있는 WMS 레이어의 경우 viewparams나 styles가 변경되었을 수 있음
           const existingLayer = activeLayers.get(config.id) as L.TileLayer.WMS;
-          if (existingLayer && existingLayer.setParams) {
-            existingLayer.setParams({
+
+          if(existingLayer && existingLayer.setParams) {
+            const params: any = {
               viewparams: config.viewparams || '',
               styles: config.styles || '',
               env: config.env || ''
-            } as any);
+            };
+
+            // CQL_FILTER 적용
+            if(config.cqlFilter) {
+              params.cql_filter = config.cqlFilter;
+            }
+
+            existingLayer.setParams(params);
           }
         }
       } else if (!config.isOn && isCurrentlyOnMap) {

@@ -16,6 +16,7 @@ export interface LayerConfig {
   viewparams?: string;
   env?: string;
   styles?: string;
+  cqlFilter?: string; // grp_isl
 }
 
 export const useMapStore = defineStore('map', () => {
@@ -23,6 +24,7 @@ export const useMapStore = defineStore('map', () => {
   const currentStyleMode = ref<'default' | 'analysis'>('default');
   const regions = ref<Region[]>([]);
   const locationToZoom = ref<RegionLocation | null>(null);
+  const islandMode = ref<'all' | 'land' | 'island'>('all');
 
   const fetchRegions = async () => {
     regions.value = await regionService.getRegions();
@@ -101,6 +103,32 @@ export const useMapStore = defineStore('map', () => {
   };
 
 
+  /**
+   * 육지/섬 필터링 모드를 설정합니다.
+   */
+  const setIslandMode = (mode: 'all' | 'land' | 'island') => {
+    islandMode.value = mode;
+    updateIslandFilter();
+  };
+
+  /**
+   * 현재 islandMode에 따라 CQL_FILTER를 적용합니다.
+   * @param layerId
+   */
+  const updateIslandFilter = () => {
+    let cqlFilter = '';
+
+    if(islandMode.value === 'land') {
+      cqlFilter = 'grp_isl = 1'; // 1: 육지 해안선을 표시합니다.
+    } else if(islandMode.value === 'island') {
+      cqlFilter = 'grp_isl = 2'; // 2: 도서 해안선을 표시합니다.
+    }
+
+    // 해안선 레이어에 CQL_FILTER 적용
+    setLayerStatus('korea_coastline', { cqlFilter });
+    setLayerStatus('coastline_popup', { cqlFilter });
+  }
+
   const toggleLayer = (layerId: string) => {
     const layer = layers.value.find(l => l.id === layerId);
     if (layer) {
@@ -120,6 +148,9 @@ export const useMapStore = defineStore('map', () => {
     regions,
     fetchRegions,
     locationToZoom,
-    fetchRegionLocation
+    fetchRegionLocation,
+    islandMode,
+    setIslandMode,
+    updateIslandFilter
   };
 });
