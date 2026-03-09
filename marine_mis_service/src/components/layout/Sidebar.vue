@@ -37,6 +37,24 @@ const clearSearch = () => {
   mapStore.updateViewParams('');
 };
 
+const handleViewModeChange = (mode: 'coastal' | 'open-sea') => {
+  /*모드 전환 시 이전 모드의 상태들을 초기화 (사이드바 메뉴 상태 포함)*/
+  if (mapStore.viewMode !== mode) {
+    menuItems.value.forEach(menu => {
+      if (menu.subMenus) {
+        menu.subMenus.forEach(subMenu => {
+          if (typeof subMenu === 'object' && subMenu.isToggleable) {
+            subMenu.isOn = false;
+          }
+        });
+      }
+    });
+  }
+  
+  mapStore.setViewMode(mode);
+  console.log('View mode changed to:', mode);
+};
+
 const toggleLayer = (subMenu: any) => {
   if (typeof subMenu === 'object' && subMenu.isToggleable) {
     // 해안선 레이어(korea_coastline) 관련 기능의 경우 로그인 여부 확인
@@ -62,17 +80,6 @@ const toggleLayer = (subMenu: any) => {
   }
 };
 
-const handleIslandModeChange = (mode: 'all' | 'land' | 'island', subMenu: SubMenuItem) => {
-  if(!userStore.user) {
-    alert('해안선 관련 기능은 로그인 후 이용 가능합니다.');
-    return;
-  }
-
-  console.log('Island mode changing to:', mode);
-  mapStore.setIslandMode(mode);
-  subMenu.value = mode;
-}
-
 const getSubMenuName = (subMenu: string | SubMenuItem) => {
   return typeof subMenu === 'string' ? subMenu : subMenu.name;
 };
@@ -83,10 +90,31 @@ const getSubMenuName = (subMenu: string | SubMenuItem) => {
   <aside class="bg-gray-100 w-64 border-r border-gray-300 flex-shrink-0 flex flex-col">
     <!-- 사이드바 제목 -->
     <div class="p-4 font-bold border-b border-gray-300">Menu</div>
+
+    <!-- 해안선 모드 / 개방해 모드 전환 탭 -->
+    <div class="px-4 py-3 bg-white border-b border-gray-200">
+      <div class="flex bg-gray-100 p-1 rounded-lg">
+        <button
+          @click="handleViewModeChange('coastal')"
+          class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all duration-200"
+          :class="mapStore.viewMode === 'coastal' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+        >
+          해안선 모드
+        </button>
+        <button
+          @click="handleViewModeChange('open-sea')"
+          class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all duration-200"
+          :class="mapStore.viewMode === 'open-sea' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+        >
+          개방해 모드
+        </button>
+      </div>
+    </div>
     
     <!-- 메뉴 네비게이션 목록 -->
     <nav class="flex-1 overflow-y-auto p-4 text-sm">
-      <ul class="space-y-2">
+      <!-- 모드에 따른 컨텐츠 필터링 -->
+      <ul v-if="mapStore.viewMode === 'coastal'" class="space-y-2">
         <li v-for="(menu, index) in menuItems" :key="menu.name">
           <div 
             class="p-2 hover:bg-gray-200 rounded cursor-pointer flex justify-between items-center transition-colors duration-200"
@@ -161,34 +189,19 @@ const getSubMenuName = (subMenu: string | SubMenuItem) => {
                     </option>
                   </datalist>
                 </div>
-                <!-- 필터형 메뉴 아이템 -->
-                <div v-else-if="typeof subMenu === 'object' && subMenu.type === 'filter'" class="p-2">
-                  <div class="space-y-1">
-                    <label
-                        v-for="option in subMenu.options"
-                        :key="option.value"
-                        class="flex items-center space-x-2 text-xs cursor-pointer hover:bg-gray-50 p-1 rounded"
-                    >
-                      <input
-                          type="radio"
-                          :name="`${subMenu.name}-filter`"
-                          :value="option.value"
-                          :checked="mapStore.islandMode === option.value"
-                          @change="handleIslandModeChange(option.value as 'all' | 'land' | 'island', subMenu)"
-                          class="text-blue-600 focus:ring-blue-500 focus:ring-1"
-                      >
-                      <span class="text-gray-700">{{ option.label }}</span>
-                    </label>
-                  </div>
-                </div>
-
-
-
+                <!-- 필터형 메뉴 아이템 (제거됨) -->
               </li>
             </ul>
           </transition>
         </li>
       </ul>
+      <!-- /*TODO: 개방해 모드 Placeholder, 추후 개방해 api관련 ui 추가*/ -->
+      <div v-else-if="mapStore.viewMode === 'open-sea'" class="flex flex-col items-center justify-center h-full text-gray-400 space-y-3 opacity-60">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+        </svg>
+        <span class="text-xs font-medium">개방해 모드 준비 중...</span>
+      </div>
     </nav>
   </aside>
 </template>

@@ -24,8 +24,8 @@ export const useMapStore = defineStore('map', () => {
   const currentStyleMode = ref<'default' | 'analysis'>('default');
   const regions = ref<Region[]>([]);
   const locationToZoom = ref<RegionLocation | null>(null);
-  const islandMode = ref<'all' | 'land' | 'island'>('all');
-  const resetTrigger = ref(0); // /*로그아웃 시 컴포넌트에 초기화 신호를 보내기 위한 변수*/
+  const viewMode = ref<'coastal' | 'open-sea'>('coastal');
+  const resetTrigger = ref(0); // 로그아웃 시 컴포넌트에 초기화 신호를 보내기 위한 변수
 
   const fetchRegions = async () => {
     regions.value = await regionService.getRegions();
@@ -96,39 +96,32 @@ export const useMapStore = defineStore('map', () => {
       // 기존 객체에 새로운 변경사항을 덮어씌움 (Spread 배열 사용)
       layers.value[index] = { ...layers.value[index], ...updates };
     }
-
-    // console.log(
-    //     'toggleLayer',
-    //     layers.value.map(l => ({ id: l.id, isOn: l.isOn }))
-    // )
   };
 
-
-  /**
-   * 육지/섬 필터링 모드를 설정합니다.
-   */
-  const setIslandMode = (mode: 'all' | 'land' | 'island') => {
-    islandMode.value = mode;
-    updateIslandFilter();
-  };
-
-  /**
-   * 현재 islandMode에 따라 CQL_FILTER를 적용합니다.
-   * @param layerId
-   */
-  const updateIslandFilter = () => {
-    let cqlFilter = '';
-
-    if(islandMode.value === 'land') {
-      cqlFilter = 'grp_isl = 1'; // 1: 육지 해안선을 표시합니다.
-    } else if(islandMode.value === 'island') {
-      cqlFilter = 'grp_isl = 2'; // 2: 도서 해안선을 표시합니다.
+  /* 해안선 모드와 개방해 모드를 전환하는 함수*/
+  const setViewMode = (mode: 'coastal' | 'open-sea') => {
+    /* 모드 전환 시 이전 모드의 상태들을 초기화*/
+    if (viewMode.value !== mode) {
+      currentSearchVal.value = '';
+      currentStyleMode.value = 'default';
+      
+      // 모든 레이어 끔 (또는 현재 모드 관련 레이어만 선별적으로 끔)
+      layers.value = layers.value.map(layer => {
+        return {
+          ...layer,
+          isOn: false,
+          viewparams: '',
+          env: '',
+          styles: '',
+          cqlFilter: ''
+        };
+      });
+      
+      resetTrigger.value += 1; // /* 팝업 닫기 및 지도 위치/줌 초기화 트리거*/
     }
-
-    // 해안선 레이어에 CQL_FILTER 적용
-    setLayerStatus('korea_coastline', { cqlFilter });
-    setLayerStatus('coastline_popup', { cqlFilter });
-  }
+    
+    viewMode.value = mode;
+  };
 
   const toggleLayer = (layerId: string) => {
     const layer = layers.value.find(l => l.id === layerId);
@@ -147,7 +140,8 @@ export const useMapStore = defineStore('map', () => {
     currentStyleMode.value = 'default';
     regions.value = [];
     locationToZoom.value = null;
-    islandMode.value = 'all';
+    /* 초기 모드를 해안선 모드로 리셋 */
+    viewMode.value = 'coastal';
     resetTrigger.value += 1; // 팝업 닫기 등 지도 객체 직접 제어를 위한 트리거
 
     // 레이어 상태 초기화 (isOn: false 및 필터/스타일 제거)
@@ -173,9 +167,8 @@ export const useMapStore = defineStore('map', () => {
     fetchRegions,
     locationToZoom,
     fetchRegionLocation,
-    islandMode,
-    setIslandMode,
-    updateIslandFilter,
+    viewMode,
+    setViewMode,
     resetMapState,
     resetTrigger
   };

@@ -96,10 +96,12 @@ watch(() => mapStore.locationToZoom, (location) => {
   }
 });
 
-// 로그아웃 등으로 인해 지도 상태가 초기화될 때 열려있는 팝업을 닫습니다.
+// 로그아웃 등으로 인해 지도 상태가 초기화될 때 열려있는 팝업을 닫고 줌을 리셋합니다.
 watch(() => mapStore.resetTrigger, () => {
   if (map) {
+    /*팝업을 닫고 지도의 위치와 줌 레벨을 초기 상태로 되돌림*/
     map.closePopup();
+    map.setView([36.5, 127.5], 7);
   }
 });
 
