@@ -51,6 +51,9 @@ export const useUserStore = defineStore('user', {
         
         // 로컬 스토리지 등에 토큰 저장 로직이 필요할 수 있음
         localStorage.setItem('accessToken', response.data.accessToken);
+
+        // 새로고침 시 사용자 정보를 유지하기 위해 로컬 스토리지에 사용자 정보도 저장
+        localStorage.setItem('user', JSON.stringify(this.user));
         
         return true;
       } catch (error: any) {
@@ -80,6 +83,10 @@ export const useUserStore = defineStore('user', {
     // 저장된 사용자 정보를 초기화하는 액션
     clearUser() {
       this.user = null;
+
+      // 로그아웃 시 로컬 스토리지에 저장된 정보도 함께 제거
+      localStorage.removeItem('user');
+      localStorage.removeItem('accessToken');
     },
   },
 });
