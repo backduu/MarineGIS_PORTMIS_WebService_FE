@@ -4,12 +4,14 @@
  * 로그인 성공 시 Pinia 스토어에서 사용자 이름을 가져와 표시합니다.
  */
 import { useUserStore } from '@/store/useUserStore';
+import { useMapStore } from '@/store/useMapStore';
 import { storeToRefs } from 'pinia'; // 스토어의 상태를 반응형으로 유지하며 구조 분해 할당하기 위한 함수
 import { useRouter } from 'vue-router';
 import { ref } from 'vue';
 import LoginModal from '@/components/auth/LoginModal.vue';
 
 const userStore = useUserStore();
+const mapStore = useMapStore();
 // storeToRefs를 사용하면 userStore.user가 변경될 때 컴포넌트도 자동으로 업데이트됩니다.
 const { user, isLoading } = storeToRefs(userStore);
 const router = useRouter();
@@ -26,8 +28,9 @@ const closeLoginModal = () => {
 
 // 로그아웃 처리 함수
 const handleLogout = () => {
-  // userStore.clearUser() 내부에서 localStorage 초기화도 함께 수행하도록 수정합니다.
+  /*로그아웃 시 사용자 정보와 지도 상태를 모두 초기화합니다.*/
   userStore.clearUser();
+  mapStore.resetMapState();
 
   // 로그아웃 후 뒤로가기 방지를 위해 replace 사용합니다.
   router.replace('/');

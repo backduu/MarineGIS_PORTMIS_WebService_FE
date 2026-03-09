@@ -82,6 +82,7 @@ export const useUserStore = defineStore('user', {
     },
     // 저장된 사용자 정보를 초기화하는 액션
     clearUser() {
+      /*사용자 정보와 로컬 스토리지 데이터를 초기화하여 로그아웃 처리를 수행*/
       this.user = null;
 
       // 로그아웃 시 로컬 스토리지에 저장된 정보도 함께 제거

@@ -96,6 +96,13 @@ watch(() => mapStore.locationToZoom, (location) => {
   }
 });
 
+// 로그아웃 등으로 인해 지도 상태가 초기화될 때 열려있는 팝업을 닫습니다.
+watch(() => mapStore.resetTrigger, () => {
+  if (map) {
+    map.closePopup();
+  }
+});
+
 onMounted(() => {
   // 컴포넌트가 마운트되고 DOM 요소가 생성된 후 실행
   if (mapContainer.value) {

@@ -25,6 +25,7 @@ export const useMapStore = defineStore('map', () => {
   const regions = ref<Region[]>([]);
   const locationToZoom = ref<RegionLocation | null>(null);
   const islandMode = ref<'all' | 'land' | 'island'>('all');
+  const resetTrigger = ref(0); // /*로그아웃 시 컴포넌트에 초기화 신호를 보내기 위한 변수*/
 
   const fetchRegions = async () => {
     regions.value = await regionService.getRegions();
@@ -134,8 +135,31 @@ export const useMapStore = defineStore('map', () => {
     if (layer) {
       setLayerStatus(layerId, { isOn: !layer.isOn });
     }
-  }
+  };
 
+
+  /**
+   * 모든 지도 상태와 레이어 설정을 초기화하는 함수입니다.
+   * 로그아웃 시 지도의 레이어와 반응형 변수들을 한꺼번에 날려버리기 위해 추가했습니다.
+   */
+  const resetMapState = () => {
+    currentSearchVal.value = '';
+    currentStyleMode.value = 'default';
+    regions.value = [];
+    locationToZoom.value = null;
+    islandMode.value = 'all';
+    resetTrigger.value += 1; // 팝업 닫기 등 지도 객체 직접 제어를 위한 트리거
+
+    // 레이어 상태 초기화 (isOn: false 및 필터/스타일 제거)
+    layers.value = layers.value.map(layer => ({
+      ...layer,
+      isOn: false,
+      viewparams: '',
+      env: '',
+      styles: '',
+      cqlFilter: ''
+    }));
+  };
 
   return {
     layers,
@@ -151,6 +175,8 @@ export const useMapStore = defineStore('map', () => {
     fetchRegionLocation,
     islandMode,
     setIslandMode,
-    updateIslandFilter
+    updateIslandFilter,
+    resetMapState,
+    resetTrigger
   };
 });
