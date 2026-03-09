@@ -163,7 +163,6 @@ const getSubMenuName = (subMenu: string | SubMenuItem) => {
                 </div>
                 <!-- 필터형 메뉴 아이템 -->
                 <div v-else-if="typeof subMenu === 'object' && subMenu.type === 'filter'" class="p-2">
-                  <div class="text-gray-600 font-medium mb-2">{{ subMenu.name }}</div>
                   <div class="space-y-1">
                     <label
                         v-for="option in subMenu.options"

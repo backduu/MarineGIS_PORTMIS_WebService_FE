@@ -128,8 +128,11 @@ onMounted(() => {
     });
     map = mapInstance;
 
-    // /* 백두현 */ 지도 클릭 이벤트 등록
-    map.on('click', onMapClick as L.LeafletEventHandlerFn);
+    // 지도 클릭 이벤트 등록
+    // e: L.LeafletEvent로 타입을 맞추어 TS2352 오류를 방지하고, 내부에서 L.LeafletMouseEvent로 캐스팅하여 사용
+    map.on('click', (e: L.LeafletEvent) => {
+      onMapClick(e as L.LeafletMouseEvent);
+    });
 
     // 기본 배경 지도 레이어 추가 (OpenStreetMap)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
