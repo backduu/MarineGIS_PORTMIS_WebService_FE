@@ -195,12 +195,53 @@ const getSubMenuName = (subMenu: string | SubMenuItem) => {
           </transition>
         </li>
       </ul>
-      <!-- /*TODO: 개방해 모드 Placeholder, 추후 개방해 api관련 ui 추가*/ -->
-      <div v-else-if="mapStore.viewMode === 'open-sea'" class="flex flex-col items-center justify-center h-full text-gray-400 space-y-3 opacity-60">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-        </svg>
-        <span class="text-xs font-medium">개방해 모드 준비 중...</span>
+      <!-- /*개방해 모드 전용 UI*/ -->
+      <div v-else-if="mapStore.viewMode === 'open-sea'" class="space-y-6">
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            배경지도 선택
+          </h4>
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors">
+              <input 
+                type="radio" 
+                name="basemap" 
+                value="BASEMAP_RLTM3857"
+                :checked="mapStore.baseMapMode === 'BASEMAP_RLTM3857'"
+                @change="mapStore.setBaseMapMode('BASEMAP_RLTM3857')"
+                class="text-blue-600 focus:ring-blue-500"
+              />
+              <span class="text-xs">기본 배경지도 (Vectormap)</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors">
+              <input 
+                type="radio" 
+                name="basemap" 
+                value="BASEMAP_ENC573857"
+                :checked="mapStore.baseMapMode === 'BASEMAP_ENC573857'"
+                @change="mapStore.setBaseMapMode('BASEMAP_ENC573857')"
+                class="text-blue-600 focus:ring-blue-500"
+              />
+              <span class="text-xs">전자해도 (ENC)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            데이터 중첩 (GeoServer)
+          </h4>
+          <p class="text-[11px] text-gray-400 italic mb-3">* UTM-K(EPSG:5179) 좌표계 기준</p>
+          <div class="text-center py-8 border-2 border-dashed border-gray-100 rounded-lg">
+            <span class="text-xs text-gray-400">분석 레이어 준비 중</span>
+          </div>
+        </div>
       </div>
     </nav>
   </aside>

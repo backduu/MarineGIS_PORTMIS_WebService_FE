@@ -25,6 +25,7 @@ export const useMapStore = defineStore('map', () => {
   const regions = ref<Region[]>([]);
   const locationToZoom = ref<RegionLocation | null>(null);
   const viewMode = ref<'coastal' | 'open-sea'>('coastal');
+  const baseMapMode = ref<'BASEMAP_RLTM3857' | 'BASEMAP_ENC573857'>('BASEMAP_RLTM3857'); /*개방해 모드에서 사용할 베이스맵 타입 관리*/
   const resetTrigger = ref(0); // 로그아웃 시 컴포넌트에 초기화 신호를 보내기 위한 변수
 
   const fetchRegions = async () => {
@@ -104,6 +105,7 @@ export const useMapStore = defineStore('map', () => {
     if (viewMode.value !== mode) {
       currentSearchVal.value = '';
       currentStyleMode.value = 'default';
+      baseMapMode.value = 'BASEMAP_RLTM3857'; /*모드 전환 시 베이스맵 설정도 초기화*/
       
       // 모든 레이어 끔 (또는 현재 모드 관련 레이어만 선별적으로 끔)
       layers.value = layers.value.map(layer => {
@@ -117,7 +119,7 @@ export const useMapStore = defineStore('map', () => {
         };
       });
       
-      resetTrigger.value += 1; // /* 팝업 닫기 및 지도 위치/줌 초기화 트리거*/
+      resetTrigger.value += 1; // 팝업 닫기 및 지도 위치/줌 초기화 트리거
     }
     
     viewMode.value = mode;
@@ -155,6 +157,10 @@ export const useMapStore = defineStore('map', () => {
     }));
   };
 
+  const setBaseMapMode = (mode: 'BASEMAP_RLTM3857' | 'BASEMAP_ENC573857') => {
+    baseMapMode.value = mode;
+  }; /*개방해 모드 베이스맵 변경을 위한 액션 추가*/
+
   return {
     layers,
     currentSearchVal,
@@ -169,6 +175,8 @@ export const useMapStore = defineStore('map', () => {
     fetchRegionLocation,
     viewMode,
     setViewMode,
+    baseMapMode,
+    setBaseMapMode,
     resetMapState,
     resetTrigger
   };

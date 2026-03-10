@@ -1,12 +1,13 @@
-import { watch, onUnmounted } from 'vue';
+import { watch, onUnmounted, ref, type Ref } from 'vue';
 import L from 'leaflet';
 import { useMapStore, type LayerConfig } from '@/store/useMapStore';
 import { GeoServerService } from '@/services/geoServerService';
 
 /**
  * Leaflet 지도 인스턴스와 GeoServer 레이어 간의 동기화를 관리하는 Composable입니다.
+ * mapInstance를 Ref로 전달받아 라이프사이클 훅이 setup() 단계에서 안전하게 등록되도록 수정
  */
-export function useMapLayers(mapInstance: L.Map | null) {
+export function useMapLayers(mapRef: Ref<L.Map | null>) {
   const mapStore = useMapStore();
   
   // 생성된 레이어 객체들을 관리 (레이어 ID -> Leaflet 레이어 객체)
@@ -17,6 +18,7 @@ export function useMapLayers(mapInstance: L.Map | null) {
    * 또한 viewparams나 styles가 변경된 경우 레이어를 다시 로드합니다.
    */
   const syncLayers = () => {
+    const mapInstance = mapRef.value;
     if (!mapInstance) return;
 
     mapStore.layers.forEach((config) => {
@@ -72,6 +74,14 @@ export function useMapLayers(mapInstance: L.Map | null) {
     },
     { deep: true, immediate: true }
   );
+
+  /*지도 인스턴스가 바뀌었을 때(모드 전환 등) 레이어를 재동기화하기 위한 watch 추가*/
+  watch(mapRef, (newMap) => {
+    if (newMap) {
+      activeLayers.clear(); // 새 지도이므로 관리 목록 초기화
+      syncLayers();
+    }
+  });
 
   onUnmounted(() => {
     stopWatch();

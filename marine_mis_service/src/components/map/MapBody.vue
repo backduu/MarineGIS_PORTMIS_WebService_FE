@@ -3,8 +3,10 @@
  * MapBody.vue: Leaflet 라이브러리를 사용하여 지도를 표시하고 관리하는 컴포넌트입니다.
  * React-Leaflet 대신 순수 Leaflet 객체를 사용하여 직접 제어합니다.
  */
-import { onMounted, ref, onBeforeUnmount, watch } from 'vue';
+import { onMounted, ref, onBeforeUnmount, watch, type Ref } from 'vue';
 import L from 'leaflet'; // Leaflet 핵심 라이브러리
+import 'proj4';
+import 'proj4leaflet';
 import 'leaflet/dist/leaflet.css'; // Leaflet 기본 스타일 (마커, 팝업 등 표시용)
 import { useMapLayers } from '@/composables/useMapLayers';
 import { useMapStore } from '@/store/useMapStore';
@@ -19,14 +21,15 @@ const userStore = useUserStore();
 
 // Coastline popup handler
 const onMapClick = async (e: L.LeafletMouseEvent) => {
-  if (!map) return;
+  if (!map.value) return;
+  const mapInstance = map.value as L.Map; /*타입 안정성을 위해 명시적 캐스팅*/
   // 팝업 정보 조회를 위해 SQL View 레이어(coastline_popup)를 우선 사용합니다.
   const coastlineLayer = mapStore.layers.find(l => l.id === 'coastline_popup') || 
                          mapStore.layers.find(l => l.id === 'korea_coastline');
   
   if (!coastlineLayer || !coastlineLayer.isOn) return;
-  const point = map.mouseEventToContainerPoint(e.originalEvent);
-  const data = await GeoServerService.getFeatureInfo(map, coastlineLayer, e.latlng, point);
+  const point = mapInstance.mouseEventToContainerPoint(e.originalEvent);
+  const data = await GeoServerService.getFeatureInfo(mapInstance, coastlineLayer, e.latlng, point);
   if (data && data.features && data.features.length > 0) {
     const properties = data.features[0].properties;
     L.popup()
@@ -49,12 +52,25 @@ const onMapClick = async (e: L.LeafletMouseEvent) => {
           </table>
         </div>
       `)
-      .openOn(map);
+      .openOn(mapInstance);
   }
 };
 
 // Leaflet 지도 인스턴스를 저장할 변수
-let map: L.Map | null = null;
+const map = ref<L.Map | null>(null);
+let baseLayer: L.Layer | null = null; /*배경지도 레이어를 추적하기 위한 변수*/
+
+/*setup() 단계에서 useMapLayers를 호출하여 라이프사이클 훅이 정상적으로 등록되도록 함*/
+useMapLayers(map as Ref<L.Map | null>);
+
+/*UTM-K(EPSG:5179) 좌표계 정의 (개방해 WMS용)*/
+const crs5179 = (L as any).Proj ? new (L as any).Proj.CRS('EPSG:5179',
+  '+proj=tmerc +lat_0=38 +lon_0=127.5 +k=0.9996 +x_0=1000000 +y_0=2000000 +ellps=GRS80 +units=m +no_defs',
+  {
+    resolutions: [2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1, 0.5, 0.25],
+    origin: [-200000, -2000000]
+  }
+) : L.CRS.EPSG3857;
 
 /**
  * GeoServer에서 반환하는 BBOX 문자열 "BOX(xmin ymin, xmax ymax)"을
@@ -77,17 +93,17 @@ const parseBBox = (bboxStr: string): L.LatLngBoundsExpression | null => {
 
 // 지역 위치 정보가 변경되면 해당 위치로 지도 이동
 watch(() => mapStore.locationToZoom, (location) => {
-  if (location && map) {
+  if (location && map.value) {
     const bounds = parseBBox(location.bbox);
     if (bounds) {
-      map.fitBounds(bounds, { padding: [20, 20], maxZoom: 13 });
+      map.value.fitBounds(bounds, { padding: [20, 20], maxZoom: 13 });
     } else if (location.centerJson) {
       // BBOX 파싱 실패 시 중심점(GeoJSON) 사용 시도
       try {
         const center = JSON.parse(location.centerJson);
         if (center.type === 'Point' && Array.isArray(center.coordinates)) {
           const [lng, lat] = center.coordinates;
-          map.setView([lat, lng], 13);
+          map.value.setView([lat, lng], 13);
         }
       } catch (e) {
         console.error('Failed to parse centerJson:', e);
@@ -98,58 +114,106 @@ watch(() => mapStore.locationToZoom, (location) => {
 
 // 로그아웃 등으로 인해 지도 상태가 초기화될 때 열려있는 팝업을 닫고 줌을 리셋합니다.
 watch(() => mapStore.resetTrigger, () => {
-  if (map) {
-    /*팝업을 닫고 지도의 위치와 줌 레벨을 초기 상태로 되돌림*/
-    map.closePopup();
-    map.setView([36.5, 127.5], 7);
+  /*map.value가 null이더라도 getCenter 에러가 발생할 수 있는 레이스 컨디션 방지*/
+  /*모드 전환 시에는 initMap()이 지도를 새로 그리기 때문에 별도의 setView 호출이 불필요하며 에러를 유발할 수 있음*/
+  if (map.value && (map.value as any)._container) {
+    try {
+      /*팝업을 닫고 지도의 위치와 줌 레벨을 초기 상태로 되돌림*/
+      map.value.closePopup();
+      
+      // 현재 지도 인스턴스가 유효한지(삭제되지 않았는지) 한 번 더 확인
+      if (mapStore.viewMode === 'coastal') {
+        map.value.setView([36.5, 127.5], 7);
+      } else {
+        map.value.setView([36, 127], 5); /*개방해 모드 초기 위치*/
+      }
+    } catch (e) {
+      console.warn('Map reset skipped due to instance state:', e);
+    }
   }
 });
 
-onMounted(() => {
-  // 컴포넌트가 마운트되고 DOM 요소가 생성된 후 실행
+/*뷰 모드(해안선/개방해) 변경 시 지도 초기화*/
+watch(() => mapStore.viewMode, () => {
+  initMap();
+});
+
+/*개방해 모드에서 베이스맵 타입 변경 시 레이어 갱신*/
+watch(() => mapStore.baseMapMode, () => {
+  if (mapStore.viewMode === 'open-sea') {
+    updateBaseLayer();
+  }
+});
+
+const updateBaseLayer = () => {
+  if (!map.value) return;
+  if (baseLayer) {
+    map.value.removeLayer(baseLayer);
+  }
+
+  if (mapStore.viewMode === 'coastal') {
+    const mapInstance = map.value as L.Map; /*타입 안정성을 위해 명시적 캐스팅*/
+    // 해안선 모드: OpenStreetMap
+    baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(mapInstance);
+  } else {
+    const mapInstance = map.value as L.Map; /*타입 안정성을 위해 명시적 캐스팅*/
+    // 개방해 모드: KHOA WMS Proxy
+    /*백엔드 OceanProxyController의 변경된 URL 패턴(@RequestParam layers)에 맞춰 파라미터 전달*/
+    baseLayer = (L.tileLayer as any).wms('/api/ocean-proxy/wms', {
+      layers: mapStore.baseMapMode === 'BASEMAP_ENC573857' ? 'BASEMAP_ENC573857' : 'BASEMAP_RLTM3857', 
+      format: 'image/png',
+      transparent: false,
+      version: '1.1.1',
+      attribution: 'KHOA',
+      level: () => mapInstance?.getZoom()
+    }).addTo(mapInstance);
+  }
+};
+
+const initMap = () => {
+  if (map.value) {
+    map.value.remove();
+    map.value = null;
+  }
+
   if (mapContainer.value) {
-    // 대한민국 중심 좌표 설정 (위도, 경도)
-    const position: L.LatLngExpression = [36.5, 127.5];
-    // 초기 줌 레벨
-    const zoom = 7;
-
-    // 지도의 이동 범위를 대한민국 영역으로 제한
-    const koreaBounds: L.LatLngBoundsExpression = [
-      [32.0, 123.0], // 남서단 좌표
-      [40.0, 132.0], // 북동단 좌표
-    ];
-
-    // Leaflet 지도 초기화
-    const mapInstance = L.map(mapContainer.value, {
-      center: position,       // 초기 중심점
-      zoom: zoom,             // 초기 줌
-      minZoom: 7,             // 최소 축소 레벨
-      maxZoom: 18,            // 최대 확대 레벨
-      maxBounds: koreaBounds, // 이동 가능 범위 제한
-      maxBoundsViscosity: 1.0, // 범위 밖으로 나가지 않도록 하는 강도 (1.0 = 완전 고정)
+    const isCoastal = mapStore.viewMode === 'coastal';
+    
+    map.value = L.map(mapContainer.value, {
+      center: isCoastal ? [36.5, 127.5] : [36, 127],
+      zoom: isCoastal ? 7 : 5,
+      minZoom: isCoastal ? 7 : 5,
+      maxZoom: 18,
+      crs: isCoastal ? L.CRS.EPSG3857 : crs5179, /*모드에 따라 좌표계 변경 (해안선: 3857, 개방해: 5179)*/
+      worldCopyJump: false
     });
-    map = mapInstance;
 
-    // 지도 클릭 이벤트 등록
-    // e: L.LeafletEvent로 타입을 맞추어 TS2352 오류를 방지하고, 내부에서 L.LeafletMouseEvent로 캐스팅하여 사용
-    map.on('click', (e: L.LeafletEvent) => {
+    if (isCoastal) {
+      const koreaBounds: L.LatLngBoundsExpression = [
+        [32.0, 123.0],
+        [40.0, 132.0],
+      ];
+      map.value.setMaxBounds(koreaBounds);
+    }
+
+    map.value.on('click', (e: L.LeafletEvent) => {
       onMapClick(e as L.LeafletMouseEvent);
     });
 
-    // 기본 배경 지도 레이어 추가 (OpenStreetMap)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(mapInstance);
-
-    // WMS 레이어 및 기타 레이어 관리를 위한 Composable 연결
-    useMapLayers(mapInstance);
+    updateBaseLayer();
   }
+};
+
+onMounted(() => {
+  initMap();
 });
 
 // 컴포넌트가 소멸되기 직전에 호출 (메모리 누수 방지를 위한 지도 객체 제거)
 onBeforeUnmount(() => {
-  if (map) {
-    (map as L.Map).remove(); // 지도 인스턴스 해제
+  if (map.value) {
+    (map.value as L.Map).remove(); // 지도 인스턴스 해제
   }
 });
 </script>
