@@ -166,8 +166,10 @@ const updateBaseLayer = () => {
       format: 'image/png',
       transparent: false,
       version: '1.1.1',
-      attribution: 'KHOA'
-      /*level: () => mapInstance?.getZoom()*/
+      attribution: 'KHOA',
+      noWrap: false,          // 지도가 가로로 무한 반복되도록 허용
+      continuousWorld: true,  // 좌표계 계산을 중단하지 않음
+      tileSize: 256           // KHOA 규격 고정
     }).addTo(mapInstance);
   }
 };
@@ -183,9 +185,11 @@ const initMap = () => {
     
     map.value = L.map(mapContainer.value, {
       center: isCoastal ? [36.5, 127.5] : [36, 127],
-      zoom: isCoastal ? 7 : 5,
-      minZoom: isCoastal ? 7 : 5,
-      maxZoom: 18,
+      zoom: 7,
+      minZoom: 7,
+      //zoom: isCoastal ? 7 : 5,
+      //minZoom: isCoastal ? 7 : 5,
+      maxZoom: 20,
       crs: L.CRS.EPSG3857,
       //crs: isCoastal ? L.CRS.EPSG3857 : crs5179, /*모드에 따라 좌표계 변경 (해안선: 3857, 개방해: 5179)*/
       worldCopyJump: false
