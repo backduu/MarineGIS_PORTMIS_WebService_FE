@@ -161,13 +161,13 @@ const updateBaseLayer = () => {
     const mapInstance = map.value as L.Map; /*타입 안정성을 위해 명시적 캐스팅*/
     // 개방해 모드: KHOA WMS Proxy
     /*백엔드 OceanProxyController의 변경된 URL 패턴(@RequestParam layers)에 맞춰 파라미터 전달*/
-    baseLayer = (L.tileLayer as any).wms('/api/ocean-proxy/wms', {
+    baseLayer = (L.tileLayer as any).wms('http://localhost:8080/api/ocean-proxy/wms', {
       layers: mapStore.baseMapMode === 'BASEMAP_ENC573857' ? 'BASEMAP_ENC573857' : 'BASEMAP_RLTM3857', 
       format: 'image/png',
       transparent: false,
       version: '1.1.1',
-      attribution: 'KHOA',
-      level: () => mapInstance?.getZoom()
+      attribution: 'KHOA'
+      /*level: () => mapInstance?.getZoom()*/
     }).addTo(mapInstance);
   }
 };
@@ -186,7 +186,8 @@ const initMap = () => {
       zoom: isCoastal ? 7 : 5,
       minZoom: isCoastal ? 7 : 5,
       maxZoom: 18,
-      crs: isCoastal ? L.CRS.EPSG3857 : crs5179, /*모드에 따라 좌표계 변경 (해안선: 3857, 개방해: 5179)*/
+      crs: L.CRS.EPSG3857,
+      //crs: isCoastal ? L.CRS.EPSG3857 : crs5179, /*모드에 따라 좌표계 변경 (해안선: 3857, 개방해: 5179)*/
       worldCopyJump: false
     });
 
