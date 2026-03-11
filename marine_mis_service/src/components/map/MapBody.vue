@@ -58,6 +58,7 @@ const onMapClick = async (e: L.LeafletMouseEvent) => {
 
 // Leaflet 지도 인스턴스를 저장할 변수
 const map = ref<L.Map | null>(null);
+const waterTempMarkers = L.layerGroup(); /*실측 수온 마커들을 관리할 레이어 그룹*/
 let baseLayer: L.Layer | null = null; /*배경지도 레이어를 추적하기 위한 변수*/
 
 /*setup() 단계에서 useMapLayers를 호출하여 라이프사이클 훅이 정상적으로 등록되도록 함*/
@@ -144,6 +145,48 @@ watch(() => mapStore.baseMapMode, () => {
     updateBaseLayer();
   }
 });
+
+/*실측 수온 데이터 변경 시 지도에 마커 표시*/
+watch(() => mapStore.waterTempData, (newData) => {
+  if (!map.value) return;
+  
+  waterTempMarkers.clearLayers();
+  
+  newData.forEach(item => {
+    const lat = parseFloat(item.lat);
+    const lon = parseFloat(item.lon);
+    
+    if (!isNaN(lat) && !isNaN(lon)) {
+      const marker = L.marker([lat, lon], {
+        icon: L.divIcon({
+          className: 'water-temp-marker',
+          html: `<div class="bg-blue-500 text-white rounded-full px-2 py-1 text-[10px] font-bold shadow-md border border-white whitespace-nowrap">
+                  ${item.wtem}°C
+                </div>`,
+          iconSize: [40, 20],
+          iconAnchor: [20, 10]
+        })
+      });
+      
+      marker.bindPopup(`
+        <div class="p-2 min-w-[150px]">
+          <h4 class="font-bold border-b pb-1 mb-2 text-blue-800">${item.obsvtrNm}</h4>
+          <p class="text-xs"><b>수온:</b> ${item.wtem}°C</p>
+          <p class="text-[10px] text-gray-500 mt-1 italic">측정시간: ${item.obsrvnDt}</p>
+        </div>
+      `);
+      
+      waterTempMarkers.addLayer(marker);
+    }
+  });
+
+  if (mapStore.waterTempData.length > 0 && map.value) {
+    /*마커를 지도에 추가할 때 타입 안전성을 위해 명시적 캐스팅 추가*/
+    waterTempMarkers.addTo(map.value as L.Map);
+  } else {
+    waterTempMarkers.remove();
+  }
+}, { deep: true });
 
 const updateBaseLayer = () => {
   if (!map.value) return;

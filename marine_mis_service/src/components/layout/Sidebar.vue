@@ -68,6 +68,20 @@ const toggleLayer = (subMenu: any) => {
 
     subMenu.isOn = !subMenu.isOn;
 
+    /*실측 수온 토글 시 API 호출 또는 데이터 초기화*/
+    if (subMenu.value === 'temp') {
+      if (subMenu.isOn) {
+        mapStore.fetchWaterTemp();
+      } else {
+        mapStore.clearWaterTemp();
+      }
+    }
+
+    /*토글된 메뉴가 레이어 타입인 경우 mapStore의 해당 레이어 상태 업데이트*/
+    if (subMenu.type === 'layer' && subMenu.layerId) {
+      mapStore.setLayerStatus(subMenu.layerId, { isOn: subMenu.isOn });
+    }
+
     if (subMenu.type === 'style') {
       mapStore.setStyleMode(subMenu.isOn ? 'analysis' : 'default');
 
@@ -115,7 +129,7 @@ const getSubMenuName = (subMenu: string | SubMenuItem) => {
     <nav class="flex-1 overflow-y-auto p-4 text-sm">
       <!-- 모드에 따른 컨텐츠 필터링 -->
       <ul v-if="mapStore.viewMode === 'coastal'" class="space-y-2">
-        <li v-for="(menu, index) in menuItems" :key="menu.name">
+        <li v-for="(menu, index) in menuItems.filter(m => m.name !== '조위 관측소 조회')" :key="menu.name">
           <div 
             class="p-2 hover:bg-gray-200 rounded cursor-pointer flex justify-between items-center transition-colors duration-200"
             @click="toggleMenu(index)"
@@ -235,11 +249,42 @@ const getSubMenuName = (subMenu: string | SubMenuItem) => {
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
-            데이터 중첩 (GeoServer)
+            조위관측소 조회
           </h4>
-          <p class="text-[11px] text-gray-400 italic mb-3">* UTM-K(EPSG:5179) 좌표계 기준</p>
-          <div class="text-center py-8 border-2 border-dashed border-gray-100 rounded-lg">
-            <span class="text-xs text-gray-400">분석 레이어 준비 중</span>
+          <p class="text-[11px] text-gray-400 italic mb-3">* 실시간 API 데이터 연동</p>
+
+          <div class="space-y-1">
+            <template v-for="menu in menuItems">
+              <template v-if="menu.name === '조위 관측소 조회'">
+                <div 
+                  v-for="subMenu in menu.subMenus" 
+                  :key="getSubMenuName(subMenu)"
+                  class="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors"
+                  @click="toggleLayer(subMenu)"
+                >
+                  <span class="text-xs text-gray-600">{{ getSubMenuName(subMenu) }}</span>
+                  <div 
+                    v-if="typeof subMenu === 'object' && subMenu.isToggleable"
+                    class="relative inline-block w-8 h-4 transition duration-200 ease-in-out"
+                  >
+                    <input 
+                      type="checkbox" 
+                      :checked="subMenu.isOn" 
+                      class="opacity-0 w-0 h-0"
+                      readonly
+                    />
+                    <span 
+                      class="absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-full transition-colors duration-200"
+                      :class="subMenu.isOn ? 'bg-blue-500' : 'bg-gray-300'"
+                    ></span>
+                    <span 
+                      class="absolute left-0.5 bottom-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-200 transform"
+                      :class="{ 'translate-x-4': subMenu.isOn }"
+                    ></span>
+                  </div>
+                </div>
+              </template>
+            </template>
           </div>
         </div>
       </div>

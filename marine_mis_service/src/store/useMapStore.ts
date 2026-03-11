@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { regionService, type Region, type RegionLocation } from '@/services/regionService';
+import { observatoryService, type WaterTempItem } from '@/services/observatoryService';
 
 export interface LayerConfig {
   id: string;
@@ -27,6 +28,7 @@ export const useMapStore = defineStore('map', () => {
   const viewMode = ref<'coastal' | 'open-sea'>('coastal');
   const baseMapMode = ref<'BASEMAP_RLTM3857' | 'BASEMAP_ENC573857'>('BASEMAP_RLTM3857'); /*개방해 모드에서 사용할 베이스맵 타입 관리*/
   const resetTrigger = ref(0); // 로그아웃 시 컴포넌트에 초기화 신호를 보내기 위한 변수
+  const waterTempData = ref<WaterTempItem[]>([]);
 
   const fetchRegions = async () => {
     regions.value = await regionService.getRegions();
@@ -37,6 +39,17 @@ export const useMapStore = defineStore('map', () => {
     if (location) {
       locationToZoom.value = location;
     }
+  };
+
+  /*조위관측소 실측 수온 데이터를 가져오는 액션*/
+  const fetchWaterTemp = async () => {
+    waterTempData.value = await observatoryService.getWaterTemp();
+  };
+
+  /*실측 수온 데이터를 초기화하는 액션*/
+  const clearWaterTemp = () => {
+    /*수온 데이터 초기화 로직 명시*/
+    waterTempData.value = [];
   };
 
   const layers = ref<LayerConfig[]>([
@@ -63,6 +76,21 @@ export const useMapStore = defineStore('map', () => {
       transparent: true,
       version: '1.1.1',
       attribution: 'Korea Coast Popup',
+      isOn: false,
+      type: 'wms',
+      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
+      viewparams: '',
+      env: '',
+      styles: ''
+    },
+    {
+      id: 'ocean_obs_position',
+      name: '조위관측소 위치',
+      layers: 'korea_coast:ocean_obs_position',
+      format: 'image/png',
+      transparent: true,
+      version: '1.1.1',
+      attribution: 'KHOA Obs Position',
       isOn: false,
       type: 'wms',
       url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
@@ -120,6 +148,9 @@ export const useMapStore = defineStore('map', () => {
       });
       
       resetTrigger.value += 1; // 팝업 닫기 및 지도 위치/줌 초기화 트리거
+      
+      /*모드 전환 시 실측 데이터 초기화*/
+      waterTempData.value = [];
     }
     
     viewMode.value = mode;
@@ -155,6 +186,9 @@ export const useMapStore = defineStore('map', () => {
       styles: '',
       cqlFilter: ''
     }));
+
+    /*로그아웃 시 실측 데이터 초기화*/
+    waterTempData.value = [];
   };
 
   const setBaseMapMode = (mode: 'BASEMAP_RLTM3857' | 'BASEMAP_ENC573857') => {
@@ -178,6 +212,9 @@ export const useMapStore = defineStore('map', () => {
     baseMapMode,
     setBaseMapMode,
     resetMapState,
-    resetTrigger
+    resetTrigger,
+    waterTempData,     /*수온 데이터 상태 내보내기*/
+    fetchWaterTemp,    /*수온 데이터 페치 액션 내보내기*/
+    clearWaterTemp     /*수온 데이터 초기화 액션 내보내기*/
   };
 });

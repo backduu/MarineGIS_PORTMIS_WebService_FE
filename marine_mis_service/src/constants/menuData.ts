@@ -27,4 +27,15 @@ export const sidebarMenu: MenuItem[] = [
     subMenus: ['계정 관리', '권한 설정', '로그 관리'],
     isOpen: false
   },
+  {
+    name: '조위 관측소 조회',
+    subMenus: [
+      { name: '관측소 위치', isToggleable: true, isOn: false, type: 'layer', layerId: 'ocean_obs_position' },
+      { name: '관측소 실측 수온', isToggleable: true, isOn: false, type: 'filter', value: 'temp' },
+      { name: '관측소 실측 기온', isToggleable: true, isOn: false, type: 'filter', value: 'air_temp' },
+      { name: '관측소 실측 기압', isToggleable: true, isOn: false, type: 'filter', value: 'air_press' },
+      { name: '관측소 실측 풍향/풍속', isToggleable: true, isOn: false, type: 'filter', value: 'wind' }
+    ],
+    isOpen: false
+  }
 ];
