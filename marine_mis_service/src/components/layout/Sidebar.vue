@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { sidebarMenu, type SubMenuItem } from '@/constants/menuData';
 import { useMapStore } from '@/store/useMapStore';
 import { useUserStore } from '@/store/useUserStore';
+import {observatoryLocationService} from "@/services/observatoryService";
 
 /**
  * Sidebar.vue: 좌측 사이드바 메뉴 컴포넌트입니다.
@@ -13,12 +14,39 @@ const menuItems = ref([...sidebarMenu]);
 const mapStore = useMapStore();
 const userStore = useUserStore();
 
-onMounted(() => {
-  // 초기 로드 시 필요한 작업이 있으면 정의 (현재는 토글 시 로딩으로 변경됨)
+// 커스텀 셀렉트 박스 상태 관리 (백두현 추가)
+const isObsDropdownOpen = ref(false);
+const selectedObsLabel = ref('관측소를 선택하세요');
+
+onMounted(async () => {
+  // 초기 로드 시 조위관측소 첫 페이지 로드 (백두현 추가)
+  await mapStore.resetAndFetchObservatoryLocations();
 });
 
 const toggleMenu = (index: number) => {
   menuItems.value[index].isOpen = !menuItems.value[index].isOpen;
+};
+
+// 조위관측소 드롭다운 토글
+const toggleObsDropdown = () => {
+  isObsDropdownOpen.value = !isObsDropdownOpen.value;
+};
+
+// 조위관측소 선택 처리
+const selectObs = (obs: any, subMenu: any) => {
+  selectedObsLabel.value = obs.obsvtrNm;
+  subMenu.value = obs.obsvtrNm; // 또는 ID가 있다면 ID 사용
+  handleObsChangeManual(obs.obsvtrNm, subMenu);
+  isObsDropdownOpen.value = false;
+};
+
+// 드롭다운 스크롤 이벤트 핸들러 (백두현 추가)
+const handleObsScroll = async (event: Event) => {
+  const target = event.target as HTMLElement;
+  // 스크롤이 바닥에 닿았는지 확인 (여유값 5px)
+  if (target.scrollTop + target.clientHeight >= target.scrollHeight - 5) {
+    await mapStore.fetchNextObservatoryLocations();
+  }
 };
 
 const handleRegionChange = (event: Event) => {
@@ -91,6 +119,33 @@ const toggleLayer = (subMenu: any) => {
     }
 
     console.log(`${subMenu.name} is now ${subMenu.isOn ? 'ON' : 'OFF'}`);
+  }
+};
+
+const handleObsChange = async (event: Event, subMenu: any) => {
+  const target = event.target as HTMLSelectElement;
+  const selectedValue = target.value;
+
+  handleObsChangeManual(selectedValue, subMenu);
+};
+
+/**
+ * 수정자: 백두현
+ * 설명: 관측소 선택 변경 시 호출되는 공통 로직입니다.
+ */
+const handleObsChangeManual = async (selectedValue: string, subMenu: any) => {
+  // 선택된 값 저장
+  subMenu.value = selectedValue;
+
+  // 선택된 관측소에 따라 지도 레이어 상태를 업데이트
+  if (selectedValue) {
+    mapStore.setLayerStatus('ocean_obs_position', { isOn: true });
+    console.log(`Selected observatory: ${selectedValue}`);
+    
+    // API 호출 시 페이징 파라미터 적용 (기존 로직 유지하되 백두현 주석 추가)
+    const location = await observatoryLocationService.getObservationLocation(1, 10);
+  } else {
+    mapStore.setLayerStatus('ocean_obs_position', { isOn: false });
   }
 };
 
@@ -259,28 +314,77 @@ const getSubMenuName = (subMenu: string | SubMenuItem) => {
                 <div 
                   v-for="subMenu in menu.subMenus" 
                   :key="getSubMenuName(subMenu)"
-                  class="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors"
-                  @click="toggleLayer(subMenu)"
+                  class="flex flex-col space-y-1"
                 >
-                  <span class="text-xs text-gray-600">{{ getSubMenuName(subMenu) }}</span>
+                  <!-- 커스텀 무한 스크롤 선택박스 형태 (조위관측소 선택) -->
                   <div 
-                    v-if="typeof subMenu === 'object' && subMenu.isToggleable"
-                    class="relative inline-block w-8 h-4 transition duration-200 ease-in-out"
+                    v-if="typeof subMenu === 'object' && subMenu.options"
+                    class="p-2 space-y-2"
                   >
-                    <input 
-                      type="checkbox" 
-                      :checked="subMenu.isOn" 
-                      class="opacity-0 w-0 h-0"
-                      readonly
-                    />
-                    <span 
-                      class="absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-full transition-colors duration-200"
-                      :class="subMenu.isOn ? 'bg-blue-500' : 'bg-gray-300'"
-                    ></span>
-                    <span 
-                      class="absolute left-0.5 bottom-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-200 transform"
-                      :class="{ 'translate-x-4': subMenu.isOn }"
-                    ></span>
+                    <label class="text-xs text-gray-600 font-semibold">{{ getSubMenuName(subMenu) }}</label>
+                    <div class="relative">
+                      <div 
+                        @click="toggleObsDropdown"
+                        class="w-full p-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer flex justify-between items-center"
+                      >
+                        <span>{{ selectedObsLabel }}</span>
+                        <span class="text-gray-400 text-[10px]">▼</span>
+                      </div>
+                      
+                      <!-- 드롭다운 목록 영역 -->
+                      <div 
+                        v-if="isObsDropdownOpen"
+                        class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-40 overflow-y-auto"
+                        @scroll="handleObsScroll"
+                      >
+                        <div 
+                          class="p-2 text-xs hover:bg-blue-50 cursor-pointer text-gray-500 italic border-b border-gray-100"
+                          @click="selectObs({obsvtrNm: '전체 관측소'}, subMenu)"
+                        >
+                          전체 관측소
+                        </div>
+                        <div 
+                          v-for="obs in mapStore.obsLocations" 
+                          :key="obs.obsvtrNm"
+                          @click="selectObs(obs, subMenu)"
+                          class="p-2 text-xs hover:bg-blue-50 cursor-pointer text-gray-700"
+                        >
+                          {{ obs.obsvtrNm }}
+                        </div>
+                        <!-- 로딩 표시 -->
+                        <div v-if="mapStore.isLoadingObs" class="p-2 text-center text-[10px] text-gray-400">
+                          로딩 중...
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 토글 형태 (나머지 실측 데이터) -->
+                  <div 
+                    v-else
+                    class="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer transition-colors"
+                    @click="toggleLayer(subMenu)"
+                  >
+                    <span class="text-xs text-gray-600">{{ getSubMenuName(subMenu) }}</span>
+                    <div 
+                      v-if="typeof subMenu === 'object' && subMenu.isToggleable"
+                      class="relative inline-block w-8 h-4 transition duration-200 ease-in-out"
+                    >
+                      <input 
+                        type="checkbox" 
+                        :checked="subMenu.isOn" 
+                        class="opacity-0 w-0 h-0"
+                        readonly
+                      />
+                      <span 
+                        class="absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-full transition-colors duration-200"
+                        :class="subMenu.isOn ? 'bg-blue-500' : 'bg-gray-300'"
+                      ></span>
+                      <span 
+                        class="absolute left-0.5 bottom-0.5 bg-white w-3 h-3 rounded-full transition-transform duration-200 transform"
+                        :class="{ 'translate-x-4': subMenu.isOn }"
+                      ></span>
+                    </div>
                   </div>
                 </div>
               </template>

@@ -30,7 +30,18 @@ export const sidebarMenu: MenuItem[] = [
   {
     name: '조위 관측소 조회',
     subMenus: [
-      { name: '관측소 위치', isToggleable: true, isOn: false, type: 'layer', layerId: 'ocean_obs_position' },
+      { 
+        name: '조위관측소 선택', 
+        isToggleable: false, 
+        type: 'layer', 
+        layerId: 'ocean_obs_position',
+        options: [
+          { label: '전체 관측소', value: 'all' },
+          { label: '인천 관측소', value: 'DT_0001' },
+          { label: '부산 관측소', value: 'DT_0002' },
+          { label: '목포 관측소', value: 'DT_0003' }
+        ]
+      },
       { name: '관측소 실측 수온', isToggleable: true, isOn: false, type: 'filter', value: 'temp' },
       { name: '관측소 실측 기온', isToggleable: true, isOn: false, type: 'filter', value: 'air_temp' },
       { name: '관측소 실측 기압', isToggleable: true, isOn: false, type: 'filter', value: 'air_press' },

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { regionService, type Region, type RegionLocation } from '@/services/regionService';
-import { observatoryService, type WaterTempItem } from '@/services/observatoryService';
+import {observatoryLocationService, observatoryService, type WaterTempItem} from '@/services/observatoryService';
 
 export interface LayerConfig {
   id: string;
@@ -29,6 +29,11 @@ export const useMapStore = defineStore('map', () => {
   const baseMapMode = ref<'BASEMAP_RLTM3857' | 'BASEMAP_ENC573857'>('BASEMAP_RLTM3857'); /*개방해 모드에서 사용할 베이스맵 타입 관리*/
   const resetTrigger = ref(0); // 로그아웃 시 컴포넌트에 초기화 신호를 보내기 위한 변수
   const waterTempData = ref<WaterTempItem[]>([]);
+  const obsLocations = ref<any[]>([]);
+  const obsCurrentPage = ref(1);
+  const hasMoreObs = ref(true);
+  const isLoadingObs = ref(false);
+  const obsLocMode = ref<'all' | any> ('all');
 
   const fetchRegions = async () => {
     regions.value = await regionService.getRegions();
@@ -41,9 +46,60 @@ export const useMapStore = defineStore('map', () => {
     }
   };
 
+  const fetchNextObservatoryLocations = async () => {
+    if (isLoadingObs.value || !hasMoreObs.value) return;
+
+    isLoadingObs.value = true;
+    try {
+      const pageSize = 10;
+      const newLocations = await observatoryLocationService.getObservationLocation(obsCurrentPage.value, pageSize);
+
+      if (newLocations && newLocations.length > 0) {
+        // 기존 목록에 새로운 데이터 추가
+        obsLocations.value = [...obsLocations.value, ...newLocations];
+        obsCurrentPage.value += 1;
+
+        // 가져온 데이터가 요청한 사이즈보다 작으면 더 이상 데이터가 없는 것으로 판단
+        if (newLocations.length < pageSize) {
+          hasMoreObs.value = false;
+        }
+      } else {
+        hasMoreObs.value = false;
+      }
+    } catch (error) {
+      console.error('Failed to fetch observatory locations:', error);
+    } finally {
+      isLoadingObs.value = false;
+    }
+  };
+
+  /**
+   * 수정자: 백두현
+   * 설명: 조위관측소 정보를 초기화하고 첫 페이지를 로드합니다.
+   */
+  const resetAndFetchObservatoryLocations = async () => {
+    obsLocations.value = [];
+    obsCurrentPage.value = 1;
+    hasMoreObs.value = true;
+    await fetchNextObservatoryLocations();
+  };
+
+  const fetchObservatoryLocations = async () => {
+    /* 
+       수정자: 백두현 
+       설명: 백엔드 API 변경에 따라 mode 대신 page, size 파라미터를 사용하여 
+       관측소 위치 정보를 가져오도록 수정했습니다.
+    */
+    const location = await observatoryLocationService.getObservationLocation(1, 100);
+    if (location) {
+      obsLocMode.value = location;
+    }
+  }
+
   /*조위관측소 실측 수온 데이터를 가져오는 액션*/
   const fetchWaterTemp = async () => {
     waterTempData.value = await observatoryService.getWaterTemp();
+    console.log('WaterTempData:', waterTempData.value);
   };
 
   /*실측 수온 데이터를 초기화하는 액션*/
@@ -86,7 +142,7 @@ export const useMapStore = defineStore('map', () => {
     {
       id: 'ocean_obs_position',
       name: '조위관측소 위치',
-      layers: 'korea_coast:ocean_obs_position',
+      layers: 'korea_coast:v_tide_obs_geom',
       format: 'image/png',
       transparent: true,
       version: '1.1.1',
@@ -163,7 +219,6 @@ export const useMapStore = defineStore('map', () => {
     }
   };
 
-
   /**
    * 모든 지도 상태와 레이어 설정을 초기화하는 함수입니다.
    * 로그아웃 시 지도의 레이어와 반응형 변수들을 한꺼번에 날려버리기 위해 추가했습니다.
@@ -211,6 +266,10 @@ export const useMapStore = defineStore('map', () => {
     setViewMode,
     baseMapMode,
     setBaseMapMode,
+    resetAndFetchObservatoryLocations,
+    fetchNextObservatoryLocations,
+    isLoadingObs,
+    obsLocations,
     resetMapState,
     resetTrigger,
     waterTempData,     /*수온 데이터 상태 내보내기*/
