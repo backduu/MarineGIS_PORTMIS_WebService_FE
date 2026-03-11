@@ -34,7 +34,7 @@ export const sidebarMenu: MenuItem[] = [
         name: '조위관측소 선택', 
         isToggleable: false, 
         type: 'layer', 
-        layerId: 'ocean_obs_position',
+        layerId: 'ocean_obs_location',
         options: [
           { label: '전체 관측소', value: 'all' },
           { label: '인천 관측소', value: 'DT_0001' },

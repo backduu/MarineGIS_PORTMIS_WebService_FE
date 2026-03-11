@@ -19,7 +19,7 @@ const isObsDropdownOpen = ref(false);
 const selectedObsLabel = ref('관측소를 선택하세요');
 
 onMounted(async () => {
-  // 초기 로드 시 조위관측소 첫 페이지 로드 (백두현 추가)
+  // 초기 로드 시 조위관측소 첫 페이지 로드
   await mapStore.resetAndFetchObservatoryLocations();
 });
 
@@ -126,26 +126,29 @@ const handleObsChange = async (event: Event, subMenu: any) => {
   const target = event.target as HTMLSelectElement;
   const selectedValue = target.value;
 
-  handleObsChangeManual(selectedValue, subMenu);
+  await handleObsChangeManual(selectedValue, subMenu);
 };
 
-/**
- * 수정자: 백두현
- * 설명: 관측소 선택 변경 시 호출되는 공통 로직입니다.
- */
 const handleObsChangeManual = async (selectedValue: string, subMenu: any) => {
   // 선택된 값 저장
   subMenu.value = selectedValue;
 
   // 선택된 관측소에 따라 지도 레이어 상태를 업데이트
-  if (selectedValue) {
-    mapStore.setLayerStatus('ocean_obs_position', { isOn: true });
+  if (selectedValue === '전체 관측소') {
+    mapStore.setLayerStatus('ocean_obs_location', {
+      isOn: true,
+      cqlFilter: ''
+    });
+  } else {
+    mapStore.setLayerStatus('ocean_obs_location', {
+      isOn: true,
+      cqlFilter: `obsvtr_nm = '${selectedValue}'`
+    });
     console.log(`Selected observatory: ${selectedValue}`);
     
-    // API 호출 시 페이징 파라미터 적용 (기존 로직 유지하되 백두현 주석 추가)
-    const location = await observatoryLocationService.getObservationLocation(1, 10);
-  } else {
-    mapStore.setLayerStatus('ocean_obs_position', { isOn: false });
+    // API 호출 시 페이징 파라미터 적용
+    // const location = await observatoryLocationService.getObservationLocation(1, 10);
+    // console.log('API Response:', location);
   }
 };
 

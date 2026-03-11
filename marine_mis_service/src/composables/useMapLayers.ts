@@ -40,16 +40,17 @@ export function useMapLayers(mapRef: Ref<L.Map | null>) {
           // 이미 지도에 있는 WMS 레이어의 경우 viewparams나 styles가 변경되었을 수 있음
           const existingLayer = activeLayers.get(config.id) as L.TileLayer.WMS;
 
-          if(existingLayer && existingLayer.setParams) {
-            const params: any = {
-              viewparams: config.viewparams || '',
-              styles: config.styles || '',
-              env: config.env || ''
+          if (existingLayer && existingLayer.setParams) {
+            const params: Record<string, string> = {
+              STYLES: config.styles || '',
+              VIEWPARAMS: config.viewparams || '',
+              ENV: config.env || '',
+              CQL_FILTER: config.cqlFilter || ''
             };
 
             // CQL_FILTER 적용
             if(config.cqlFilter) {
-              params.cql_filter = config.cqlFilter;
+              params.CQL_FILTER = config.cqlFilter;
             }
 
             existingLayer.setParams(params);

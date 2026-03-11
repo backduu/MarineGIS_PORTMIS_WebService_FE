@@ -74,8 +74,7 @@ export const useMapStore = defineStore('map', () => {
   };
 
   /**
-   * 수정자: 백두현
-   * 설명: 조위관측소 정보를 초기화하고 첫 페이지를 로드합니다.
+   * 조위관측소 정보를 초기화하고 첫 페이지를 로드합니다.
    */
   const resetAndFetchObservatoryLocations = async () => {
     obsLocations.value = [];
@@ -85,11 +84,6 @@ export const useMapStore = defineStore('map', () => {
   };
 
   const fetchObservatoryLocations = async () => {
-    /* 
-       수정자: 백두현 
-       설명: 백엔드 API 변경에 따라 mode 대신 page, size 파라미터를 사용하여 
-       관측소 위치 정보를 가져오도록 수정했습니다.
-    */
     const location = await observatoryLocationService.getObservationLocation(1, 100);
     if (location) {
       obsLocMode.value = location;
@@ -140,13 +134,28 @@ export const useMapStore = defineStore('map', () => {
       styles: ''
     },
     {
-      id: 'ocean_obs_position',
-      name: '조위관측소 위치',
+      id: 'ocean_obs_water_temp',
+      name: '조위관측소 실측 수온',
       layers: 'korea_coast:v_tide_obs_geom',
       format: 'image/png',
       transparent: true,
       version: '1.1.1',
-      attribution: 'KHOA Obs Position',
+      attribution: 'KHOA Obs Water Temp',
+      isOn: false,
+      type: 'wms',
+      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
+      viewparams: '',
+      env: '',
+      styles: ''
+    },
+    {
+      id: 'ocean_obs_location',
+      name: '조위관측소 위치',
+      layers: 'korea_coast:v_obs_locations_geom',
+      format: 'image/png',
+      transparent: true,
+      version: '1.1.1',
+      attribution: 'KHOA Obs Location',
       isOn: false,
       type: 'wms',
       url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
