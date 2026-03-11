@@ -8,31 +8,16 @@ export interface WaterTempItem {
   wtem: string;        // 수온
 }
 
-export interface WaterTempApiResponse {
-  header: {
-    resultCode: string;
-    resultMsg: string;
-  };
-  body: {
-    items: {
-      item: WaterTempItem[];
-    };
-  };
-  numOfRows: number;
-  pageNo: number;
-  totalCount: number;
-  type: string;
-}
 
 export const observatoryService = {
   /**
    * 수온 정보를 가져옵니다.
-   * 수정자: 백두현
    */
   async getWaterTemp(): Promise<WaterTempItem[]> {
     try {
-      const response = await api.get<WaterTempApiResponse>('/observatory/water-temp');
-      return response.data?.body?.items?.item || [];
+      const response = await api.get<WaterTempItem[]>('/observatory/water-temp');
+
+      return response.data || [];
     } catch (error) {
       console.error('Failed to fetch water temperature data:', error);
       return [];
