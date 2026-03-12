@@ -14,7 +14,10 @@ export const GeoServerService = {
         attribution: config.attribution,
         opacity: config.transparent ? 1 : 0,
         // WMTS 타일은 기본적으로 256X256 또는 512X512입니다.
-        tileSize: 256
+        tileSize: 256,
+        keepBuffer: 2, // 현재 화면 위에서 주변 타일을 2개 정도 미리 유지합니다.
+        updateInterval: 100, // 타일 업데이트 간격을 100ms로 설정합니다.
+        updateWhenZooming: false, // 줌 애니메이션 중에 다음 타일을 미리 불러오기 시작합니다.
       });
     }
 
