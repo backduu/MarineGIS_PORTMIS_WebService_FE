@@ -41,11 +41,12 @@ export function useMapLayers(mapRef: Ref<L.Map | null>) {
           const existingLayer = activeLayers.get(config.id) as L.TileLayer.WMS;
 
           if (existingLayer && existingLayer.setParams) {
-            const params: Record<string, string> = {
+            const params: any = {
               STYLES: config.styles || '',
               VIEWPARAMS: config.viewparams || '',
               ENV: config.env || '',
-              CQL_FILTER: config.cqlFilter || ''
+              CQL_FILTER: config.cqlFilter || '',
+              layers: config.layers,
             };
 
             // CQL_FILTER 적용
