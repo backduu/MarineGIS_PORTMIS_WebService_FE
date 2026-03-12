@@ -97,6 +97,7 @@ watch(() => mapStore.locationToZoom, (location) => {
   if (location && map.value) {
     const bounds = parseBBox(location.bbox);
     if (bounds) {
+      // 자동으로 해당 좌표에 이동
       map.value.fitBounds(bounds, { padding: [20, 20], maxZoom: 13 });
     } else if (location.centerJson) {
       // BBOX 파싱 실패 시 중심점(GeoJSON) 사용 시도

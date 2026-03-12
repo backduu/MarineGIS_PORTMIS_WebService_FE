@@ -6,8 +6,22 @@ import { type LayerConfig } from '@/store/useMapStore';
  */
 export const GeoServerService = {
   /**
-   * LayerConfig 설정을 기반으로 Leaflet WMS 레이어 객체를 생성합니다.
+   * LayerConfig 설정을 기반으로 Leaflet WMS 레이어 객체와 WMTS 레이어 객체를 생성합니다.
    */
+  createLayer(config: LayerConfig): L.Layer {
+    if(config.type == 'tile') {
+      return L.tileLayer(config.url, {
+        attribution: config.attribution,
+        opacity: config.transparent ? 1 : 0,
+        // WMTS 타일은 기본적으로 256X256 또는 512X512입니다.
+        tileSize: 256
+      });
+    }
+
+    // WMTS 외 타입인 경우 기본적으로 WMS 레이어 생성합니다.
+    // TS가 모든 경로에서 return이 발생함을 인지하게 됩니다.
+    return this.createWmsLayer(config);
+  },
   createWmsLayer(config: LayerConfig): L.TileLayer.WMS {
     // wms 옵션을 생성하여 CQL_FILTER가 있으면 해당 옵션에 추가합니다.
     const wmsOptions: L.WMSOptions = {

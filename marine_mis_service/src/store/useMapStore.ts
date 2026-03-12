@@ -105,15 +105,17 @@ export const useMapStore = defineStore('map', () => {
   const layers = ref<LayerConfig[]>([
     {
       id: 'korea_coastline',
-      name: '해안선 레이어',
+      name: '해안선 레이어(WMTS)',
       layers: 'korea_coast:all_countries_coastline_2025',
       format: 'image/png',
       transparent: true,
       version: '1.1.1',
-      attribution: 'Korea Coast WMS',
+      attribution: 'Korea Coast WMTS',
       isOn: false,
-      type: 'wms',
-      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
+      type: 'tile',
+      url: 'http://127.0.0.1:8020/geoserver/gwc/service/wmts/rest/' +
+          'korea_coast:all_countries_coastline_2025/default/' +
+          'EPSG:900913/EPSG:900913:{z}/{y}/{x}?format=image/png',
       viewparams: '',
       env: '',
       styles: ''
