@@ -96,6 +96,14 @@ const parseBBox = (bboxStr: string): L.LatLngBoundsExpression | null => {
 watch(() => mapStore.locationToZoom, (location) => {
   if (location && map.value) {
     const bounds = parseBBox(location.bbox);
+
+    // 이동 완료 후 처리를 위한 공통 로직
+    const afterMove = () => {
+      if(map.value) {
+        // 지도 크기 다시 계산하고 렌더링한다.
+        map.value.invalidateSize();
+      }
+    }
     if (bounds) {
       // 자동으로 해당 좌표에 이동
       map.value.fitBounds(bounds, { padding: [20, 20], maxZoom: 13 });

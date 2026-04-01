@@ -37,6 +37,17 @@ const selectObs = (obs: any, subMenu: any) => {
   selectedObsLabel.value = obs.obsvtrNm;
   mapStore.selectedObsCode = obs.obsCode;
 
+  // MapBody.vue의 watch가 감지할 수 있게 조위관측소의 lat, lon을 locationToZoom 형식으로 변환한다.
+  if(obs.lat && obs.lon) {
+    mapStore.locationToZoom = {
+      bbox: '',
+      centerJson: JSON.stringify({
+        type: 'Point',
+        coordinates: [parseFloat(obs.lon), parseFloat(obs.lat)]
+      })
+    }
+  }
+
   handleObsChangeManual(obs.obsvtrNm, subMenu);
 
   // 만약 수온 레이어가 이미 켜져 있다면, 선택이 바뀔 때 데이터를 새로 고친다.
