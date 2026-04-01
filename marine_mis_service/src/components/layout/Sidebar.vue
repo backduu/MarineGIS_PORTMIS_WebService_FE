@@ -35,8 +35,18 @@ const toggleObsDropdown = () => {
 // 조위관측소 선택 처리
 const selectObs = (obs: any, subMenu: any) => {
   selectedObsLabel.value = obs.obsvtrNm;
-  subMenu.value = obs.obsvtrNm; // 또는 ID가 있다면 ID 사용
+  mapStore.selectedObsCode = obs.obsCode;
+
   handleObsChangeManual(obs.obsvtrNm, subMenu);
+
+  // 만약 수온 레이어가 이미 켜져 있다면, 선택이 바뀔 때 데이터를 새로 고친다.
+  const tempSubMenu = menuItems.value.find(m => m.name === '조위 관측소 조회')?.subMenus
+      ?.find(s => typeof s === 'object' && s.value ==='temp') as SubMenuItem;
+
+  if(tempSubMenu?.isOn) {
+    mapStore.fetchWaterTemp(obs.obsCode);
+  }
+
   isObsDropdownOpen.value = false;
 };
 
@@ -99,7 +109,7 @@ const toggleLayer = (subMenu: any) => {
     /*실측 수온 토글 시 API 호출 또는 데이터 초기화*/
     if (subMenu.value === 'temp') {
       if (subMenu.isOn) {
-        mapStore.fetchWaterTemp();
+        mapStore.fetchWaterTemp(mapStore.selectedObsCode);
       } else {
         mapStore.clearWaterTemp();
       }

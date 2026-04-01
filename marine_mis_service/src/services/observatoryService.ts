@@ -20,9 +20,11 @@ export const observatoryService = {
   /**
    * 수온 정보를 가져옵니다.
    */
-  async getWaterTemp(): Promise<WaterTempItem[]> {
+  async getWaterTemp(obsCode?: string): Promise<WaterTempItem[]> {
     try {
-      const response = await api.get<WaterTempItem[]>('/observatory/water-temp');
+      const response = await api.get<WaterTempItem[]>('/observatory/water-temp'
+      , { params: { obsCode }
+      });
 
       return response.data || [];
     } catch (error) {

@@ -34,6 +34,7 @@ export const useMapStore = defineStore('map', () => {
   const hasMoreObs = ref(true);
   const isLoadingObs = ref(false);
   const obsLocMode = ref<'all' | any> ('all');
+  const selectedObsCode = ref<string>(''); // 현재 선택된 관측소 코드를 저장할 상태
 
   const fetchRegions = async () => {
     regions.value = await regionService.getRegions();
@@ -90,9 +91,18 @@ export const useMapStore = defineStore('map', () => {
     }
   }
 
-  /*조위관측소 실측 수온 데이터를 가져오는 액션*/
-  const fetchWaterTemp = async () => {
-    waterTempData.value = await observatoryService.getWaterTemp();
+  /**
+   * 조위관측소 실측 수온 데이터를 가져오고 선택한 관측소 코드를 전송합니다.
+   */
+  const fetchWaterTemp = async (obsCode?: string) => {
+
+    // 파라미터가 있으면 해당 값을 사용하고, 없으면 store의 상태를 사용.
+    const targetObs = obsCode || selectedObsCode.value;
+
+    // '전체 관측소'인 경우 파라미터 없이 보냅니다.
+    const param = targetObs === '전체 관측소' ? undefined : targetObs;
+
+    waterTempData.value = await observatoryService.getWaterTemp(param);
     console.log('WaterTempData:', waterTempData.value);
   };
 
@@ -255,8 +265,6 @@ export const useMapStore = defineStore('map', () => {
     waterTempData.value = [];
   };
 
-
-
   const setBaseMapMode = (mode: 'BASEMAP_RLTM3857' | 'BASEMAP_ENC573857') => {
     baseMapMode.value = mode;
   }; /*개방해 모드 베이스맵 변경을 위한 액션 추가*/
@@ -285,6 +293,7 @@ export const useMapStore = defineStore('map', () => {
     resetTrigger,
     waterTempData,     /*수온 데이터 상태 내보내기*/
     fetchWaterTemp,    /*수온 데이터 페치 액션 내보내기*/
-    clearWaterTemp     /*수온 데이터 초기화 액션 내보내기*/
+    clearWaterTemp,     /*수온 데이터 초기화 액션 내보내기*/
+    selectedObsCode
   };
 });
