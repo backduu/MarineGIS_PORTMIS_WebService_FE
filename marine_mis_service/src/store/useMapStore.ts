@@ -12,7 +12,7 @@ export interface LayerConfig {
   version?: string;
   attribution?: string;
   isOn: boolean;
-  type: 'wms' | 'tile';
+  type: 'wms' | 'tile' | 'wfs';
   url: string;
   viewparams?: string;
   env?: string;
@@ -120,7 +120,7 @@ export const useMapStore = defineStore('map', () => {
       format: 'image/png',
       transparent: true,
       version: '1.1.1',
-      attribution: 'Korea Coast WMTS',
+      attribution: 'Korea Coast WMS',
       isOn: false,
       type: 'wms',
       url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
@@ -162,16 +162,17 @@ export const useMapStore = defineStore('map', () => {
       id: 'ocean_obs_location',
       name: '조위관측소 위치',
       layers: 'korea_coast:v_obs_locations_geom',
-      format: 'image/png',
+      format: 'application/json',
       transparent: true,
-      version: '1.1.1',
+      version: '1.0.0',
       attribution: 'KHOA Obs Location',
       isOn: false,
-      type: 'wms',
-      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
+      type: 'wfs',
+      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wfs',
       viewparams: '',
       env: '',
-      styles: ''
+      styles: '',
+      cqlFilter: ''
     }
   ]);
 

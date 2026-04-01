@@ -3,6 +3,7 @@ import L from 'leaflet';
 import { useMapStore, type LayerConfig } from '@/store/useMapStore';
 import { useToastStore } from '@/store/useToastStore';
 import { GeoServerService } from '@/services/geoServerService';
+import axios from 'axios';
 
 /**
  * Leaflet 지도 인스턴스와 GeoServer 레이어 간의 동기화를 관리하는 Composable입니다.
@@ -31,7 +32,58 @@ export function useMapLayers(mapRef: Ref<L.Map | null>) {
           // 레이어를 켜야 하는데 지도에 없는 경우 추가
           let newLayer: L.Layer;
 
-          if (config.type === 'wms') {
+          if(config.type === 'wfs') {
+            // WFS URL 구성
+            const params = new URLSearchParams({
+              service: 'WFS',
+              version: config.version || '1.1.0',
+              request: 'GetFeature',
+              typeName: config.layers,
+              outputFormat: 'application/json',
+              srsName: 'EPSG:4326',
+            });
+            if (config.cqlFilter) {
+              params.append('CQL_FILTER', config.cqlFilter);
+            }
+
+            const wfsUrl = `${config.url}?${params.toString()}`;
+
+            // 데이터 호출 및 레이어 생성 (비동기처리를 위해서 별도 함수나 로직 구성)
+            axios.get(wfsUrl).then(response => {
+              const geojsonData = response.data;
+              const wfsLayer = L.geoJSON(geojsonData, {
+                pointToLayer: (feature, latlng) => {
+                  return L.circleMarker(latlng, {
+                    radius: 6,
+                    fillColor: "#af146a",
+                    color: "#653838",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                  });
+                }, onEachFeature: (feature, layer) => {
+                  // 툴팁 설정
+                  if (feature.properties.obsvtr_nm) {
+                    layer.bindTooltip(feature.properties.obsvtr_nm, {
+                      sticky: true,
+                      permanent: false,
+                      direction: 'top',
+                      className: 'custom-tooltip',
+                    });
+                  }
+                  // 클릭이벤트
+                  layer.on('click', () => {
+                    console.log("선택된 관측소:", feature.properties);
+                    // mapStore.fetchWaterTemp(feature.properties.obs_code); 등 추가 작업
+                  });
+                }
+              });
+              wfsLayer.addTo(mapInstance);
+              activeLayers.set(config.id, wfsLayer);
+            });
+            return;
+          }
+          else if (config.type === 'wms') {
             newLayer = GeoServerService.createWmsLayer(config);
 
             // 타일에러 리바운싱을 적용
@@ -117,3 +169,4 @@ export function useMapLayers(mapRef: Ref<L.Map | null>) {
     syncLayers
   };
 }
+

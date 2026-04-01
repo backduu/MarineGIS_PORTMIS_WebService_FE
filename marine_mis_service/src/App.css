@@ -40,3 +40,19 @@
 .read-the-docs {
   color: #888;
 }
+
+.custom-tooltip {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 5px 10px !important;
+  font-weight: bold !important;
+  font-size: 13px !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* 툴팁 화살표 제거 */
+.leaflet-tooltip-top:before {
+  display: none !important;
+}
