@@ -14,7 +14,7 @@ const menuItems = ref([...sidebarMenu]);
 const mapStore = useMapStore();
 const userStore = useUserStore();
 
-// 커스텀 셀렉트 박스 상태 관리 (백두현 추가)
+// 커스텀 셀렉트 박스 상태 관리
 const isObsDropdownOpen = ref(false);
 const selectedObsLabel = ref('관측소를 선택하세요');
 
@@ -40,7 +40,7 @@ const selectObs = (obs: any, subMenu: any) => {
   isObsDropdownOpen.value = false;
 };
 
-// 드롭다운 스크롤 이벤트 핸들러 (백두현 추가)
+// 드롭다운 스크롤 이벤트 핸들러
 const handleObsScroll = async (event: Event) => {
   const target = event.target as HTMLElement;
   // 스크롤이 바닥에 닿았는지 확인 (여유값 5px)
@@ -236,13 +236,21 @@ const getSubMenuName = (subMenu: string | SubMenuItem) => {
                 <!-- 검색 가능 선택창: 수심별 해안선 메뉴가 켜져 있을 때만 표시 -->
                 <div v-if="typeof subMenu === 'object' && subMenu.type === 'style' && subMenu.isOn" class="px-2 pb-2">
                   <div class="relative flex items-center">
-                    <input 
-                      type="text"
-                      list="region-list"
-                      class="w-full p-2 pr-8 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      placeholder="지역 검색/선택"
-                      :value="mapStore.currentSearchVal"
-                      @input="handleRegionChange"
+<!--                    <input -->
+<!--                      type="text"-->
+<!--                      list="region-list"-->
+<!--                      class="w-full p-2 pr-8 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"-->
+<!--                      placeholder="지역 검색/선택"-->
+<!--                      :value="mapStore.currentSearchVal"-->
+<!--                      @input="handleRegionChange"-->
+<!--                    />-->
+                    <input
+                        type="text"
+                        list="region-list"
+                        class="w-full p-2 pr-8 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        placeholder="지역 검색/선택"
+                        :value="mapStore.currentSearchVal"
+                        @input="handleRegionChange"
                     />
                     <button 
                       v-if="mapStore.currentSearchVal"

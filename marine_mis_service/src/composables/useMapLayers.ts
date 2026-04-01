@@ -1,6 +1,7 @@
 import { watch, onUnmounted, ref, type Ref } from 'vue';
 import L from 'leaflet';
 import { useMapStore, type LayerConfig } from '@/store/useMapStore';
+import { useToastStore } from '@/store/useToastStore';
 import { GeoServerService } from '@/services/geoServerService';
 
 /**
@@ -9,6 +10,7 @@ import { GeoServerService } from '@/services/geoServerService';
  */
 export function useMapLayers(mapRef: Ref<L.Map | null>) {
   const mapStore = useMapStore();
+  const toastStore = useToastStore();
   
   // 생성된 레이어 객체들을 관리 (레이어 ID -> Leaflet 레이어 객체)
   const activeLayers = new Map<string, L.Layer>();
@@ -28,8 +30,29 @@ export function useMapLayers(mapRef: Ref<L.Map | null>) {
         if (!isCurrentlyOnMap) {
           // 레이어를 켜야 하는데 지도에 없는 경우 추가
           let newLayer: L.Layer;
+
           if (config.type === 'wms') {
             newLayer = GeoServerService.createWmsLayer(config);
+
+            // 타일에러 리바운싱을 적용
+            const lastErrorTime = new Map<string, number>();
+
+            // 인증 실패 및 레이어 불러오기 에러가 발생할때 에러를 표출합니다.
+            (newLayer as L.TileLayer.WMS).on('tileerror', (error) => {
+              const now = Date.now();
+              const lastTime = lastErrorTime.get(config.id) || 0;
+
+              // 마지막 에러 발생 후 3초가 지나지 않았다면 toast를 띄우지 않습니다. (=> debouncing)
+              if(now - lastTime < 3000) return;
+
+              lastErrorTime.set(
+                config.id,
+                now
+              );
+
+              console.error('WMS tile error:', error);
+              toastStore.addToast(`레이어(${config.name})를 불러오는 중 에러가 발생했습니다.`, 'error');
+            });
           } else {
             newLayer = L.tileLayer(config.url, { attribution: config.attribution });
           }

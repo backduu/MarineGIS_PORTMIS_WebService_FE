@@ -105,17 +105,15 @@ export const useMapStore = defineStore('map', () => {
   const layers = ref<LayerConfig[]>([
     {
       id: 'korea_coastline',
-      name: '해안선 레이어(WMTS)',
+      name: '해안선 레이어(WMS)',
       layers: 'korea_coast:all_countries_coastline_2025',
       format: 'image/png',
       transparent: true,
       version: '1.1.1',
       attribution: 'Korea Coast WMTS',
       isOn: false,
-      type: 'tile',
-      url: 'http://127.0.0.1:8020/geoserver/gwc/service/wmts/rest/' +
-          'korea_coast:all_countries_coastline_2025/default/' +
-          'EPSG:900913/EPSG:900913:{z}/{y}/{x}?format=image/png',
+      type: 'wms',
+      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
       viewparams: '',
       env: '',
       styles: ''
@@ -256,6 +254,8 @@ export const useMapStore = defineStore('map', () => {
     /*로그아웃 시 실측 데이터 초기화*/
     waterTempData.value = [];
   };
+
+
 
   const setBaseMapMode = (mode: 'BASEMAP_RLTM3857' | 'BASEMAP_ENC573857') => {
     baseMapMode.value = mode;
