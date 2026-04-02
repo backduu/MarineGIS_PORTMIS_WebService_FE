@@ -22,7 +22,6 @@ export const GeoServerService = {
     }
 
     // WMTS 외 타입인 경우 기본적으로 WMS 레이어 생성합니다.
-    // TS가 모든 경로에서 return이 발생함을 인지하게 됩니다.
     return this.createWmsLayer(config);
   },
   createWmsLayer(config: LayerConfig): L.TileLayer.WMS {

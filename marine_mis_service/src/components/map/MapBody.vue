@@ -93,32 +93,47 @@ const parseBBox = (bboxStr: string): L.LatLngBoundsExpression | null => {
 };
 
 // 지역 위치 정보가 변경되면 해당 위치로 지도 이동
+// TypeError: Cannot read properties of null (reading 'latLngToLayerPoint') 에러 발생
 watch(() => mapStore.locationToZoom, (location) => {
-  if (location && map.value) {
+  if (location && map.value && (map.value as any)._container) {
     const bounds = parseBBox(location.bbox);
 
-    // 이동 완료 후 처리를 위한 공통 로직
-    const afterMove = () => {
-      if(map.value) {
-        // 지도 크기 다시 계산하고 렌더링한다.
-        map.value.invalidateSize();
-      }
-    }
-    if (bounds) {
-      // 자동으로 해당 좌표에 이동
-      map.value.fitBounds(bounds, { padding: [20, 20], maxZoom: 13 });
-    } else if (location.centerJson) {
-      // BBOX 파싱 실패 시 중심점(GeoJSON) 사용 시도
-      try {
+    try {
+      if (bounds) {
+        map.value.fitBounds(bounds, { padding: [20, 20], maxZoom: 13 });
+      } else if (location.centerJson) {
         const center = JSON.parse(location.centerJson);
         if (center.type === 'Point' && Array.isArray(center.coordinates)) {
           const [lng, lat] = center.coordinates;
           map.value.setView([lat, lng], 13);
         }
-      } catch (e) {
-        console.error('Failed to parse centerJson:', e);
       }
+    } catch (e) {
+      console.warn('Map navigation skipped:', e);
     }
+
+    // 이동 완료 후 처리를 위한 공통 로직
+    // const afterMove = () => {
+    //   if(map.value) {
+    //     // 지도 크기 다시 계산하고 렌더링한다.
+    //     map.value.invalidateSize();
+    //   }
+    // }
+    // if (bounds) {
+    //   // 자동으로 해당 좌표에 이동
+    //   map.value.fitBounds(bounds, { padding: [20, 20], maxZoom: 13 });
+    // } else if (location.centerJson) {
+    //   // BBOX 파싱 실패 시 중심점(GeoJSON) 사용 시도
+    //   try {
+    //     const center = JSON.parse(location.centerJson);
+    //     if (center.type === 'Point' && Array.isArray(center.coordinates)) {
+    //       const [lng, lat] = center.coordinates;
+    //       map.value.setView([lat, lng], 13);
+    //     }
+    //   } catch (e) {
+    //     console.error('Failed to parse centerJson:', e);
+    //   }
+    // }
   }
 });
 
