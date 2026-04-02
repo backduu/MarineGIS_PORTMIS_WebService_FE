@@ -288,8 +288,8 @@ onMounted(() => {
     window.addEventListener('open-sea-modal', ((e: CustomEvent) => {
       const { code, name, startId, endId } = e.detail;
 
-      const dateInput1 = document.getElementById('startId') as HTMLInputElement;
-      const dateInput2 = document.getElementById('endId') as HTMLInputElement;
+      const dateInput1 = document.getElementById(startId) as HTMLInputElement;
+      const dateInput2 = document.getElementById(endId) as HTMLInputElement;
 
       if (dateInput1) mapStore.selectedStartDate = dateInput1.value;
       if (dateInput2) mapStore.selectedEndDate = dateInput2.value;
