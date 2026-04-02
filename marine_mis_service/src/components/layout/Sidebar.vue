@@ -160,6 +160,12 @@ const handleObsChangeManual = async (selectedValue: string, subMenu: any) => {
       isOn: true,
       cqlFilter: ''
     });
+
+    // 스토어의 resetTrigger를 증감시켜 MapBody.vue의 watch를 실행시킴
+    mapStore.resetTrigger++;
+
+    selectedObsLabel.value = '전체 관측소';
+    mapStore.selectedObsCode = '';
   } else {
     mapStore.setLayerStatus('ocean_obs_location', {
       isOn: true,
