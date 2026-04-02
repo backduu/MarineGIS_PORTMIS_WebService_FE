@@ -70,21 +70,22 @@ export function useMapLayers(mapRef: Ref<L.Map | null>) {
                 <div style="margin-top: 8px;">
                   <label style="display: block; font-weight: bold; margin-bottom: 2px;">시작 날짜</label>
                   <input type="date" id="start-pop-date-${feature.properties.obs_code}"
-                         value="${mapStore.selectedDate}"
+                         value="${mapStore.selectedStartDate}"
                          style="width: 100%; border: 1px solid #ccc; padding: 2px 4px; border-radius: 4px;"/>
                 </div>
                 <div style="margin-top: 8px;">
                   <label style="display: block; font-weight: bold; margin-bottom: 2px;">종료 날짜</label>
                   <input type="date" id="end-pop-date-${feature.properties.obs_code}"
-                         value="${mapStore.selectedDate}"
+                         value="${mapStore.selectedEndDate}"
                          style="width: 100%; border: 1px solid #ccc; padding: 2px 4px; border-radius: 4px;"/>
                 </div>
               </div>
-              <button onclick="window.dispatchEvent(new CustomEvent('open-obs-modal', {
+              <button onclick="window.dispatchEvent(new CustomEvent('open-sea-modal', {
                 detail: {
                   code: '${feature.properties.obs_code}',
                   name: '${feature.properties.obsvtr_nm}',
-                  dateId: 'pop-date-${feature.properties.obs_code}'
+                  startId: 'start-pop-date-${feature.properties.obs_code}',
+                  endId: 'end-pop-date-${feature.properties.obs_code}'
                 }
               }))"
               style="width: 100%; background: #af146a; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold;">

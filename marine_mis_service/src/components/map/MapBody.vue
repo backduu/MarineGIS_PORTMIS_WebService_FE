@@ -13,6 +13,7 @@ import { useMapStore } from '@/store/useMapStore';
 import { useUserStore } from '@/store/useUserStore';
 
 import { GeoServerService } from '@/services/geoServerService';
+import ObsDetailModal from "@/components/map/ObsDetailModal.vue";
 
 // template의 <div ref="mapContainer">에 접근하기 위한 ref 변수
 const mapContainer = ref<HTMLElement | null>(null);
@@ -281,6 +282,22 @@ const initMap = () => {
 
 onMounted(() => {
   initMap();
+
+  // 개방해 모드일 경우 지도 컴포넌트에서 위에서 던진 이벤트를 받아 스토어 상태를 변경
+  if(mapStore.viewMode === 'open-sea') {
+    window.addEventListener('open-sea-modal', ((e: CustomEvent) => {
+      const { code, name, startId, endId } = e.detail;
+
+      const dateInput1 = document.getElementById('startId') as HTMLInputElement;
+      const dateInput2 = document.getElementById('endId') as HTMLInputElement;
+
+      if (dateInput1) mapStore.selectedStartDate = dateInput1.value;
+      if (dateInput2) mapStore.selectedEndDate = dateInput2.value;
+      mapStore.selectedObsCode = code;
+      mapStore.isObsModalOpen = true; // 모달창 open
+
+    }) as EventListener);
+  }
 });
 
 // 컴포넌트가 소멸되기 직전에 호출 (메모리 누수 방지를 위한 지도 객체 제거)
@@ -317,6 +334,9 @@ onBeforeUnmount(() => {
         검색: '{{ mapStore.currentSearchVal }}'
       </div>
     </div>
+
+    <!-- 조위관측소 상세 모달 -->
+    <ObsDetailModal />
   </main>
 </template>
 

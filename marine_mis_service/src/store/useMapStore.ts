@@ -35,6 +35,10 @@ export const useMapStore = defineStore('map', () => {
   const isLoadingObs = ref(false);
   const obsLocMode = ref<'all' | any> ('all');
   const selectedObsCode = ref<string>(''); // 현재 선택된 관측소 코드를 저장할 상태
+  const isObsModalOpen = ref(false); // 조위관측소 모달창 관련
+  const selectedStartDate = ref(new Date().toISOString().split('T')[0]); // 조위관측소 모달창 관련, 기본값 오늘
+  const selectedEndDate = ref(new Date().toISOString().split('T')[0]); // 조위관측소 모달창 관련, 기본값 오늘
+  const activeObsFeature = ref<any>(null); // active된 관측소 정보 저장할 상태
 
   const fetchRegions = async () => {
     regions.value = await regionService.getRegions();
@@ -295,6 +299,10 @@ export const useMapStore = defineStore('map', () => {
     waterTempData,     /*수온 데이터 상태 내보내기*/
     fetchWaterTemp,    /*수온 데이터 페치 액션 내보내기*/
     clearWaterTemp,     /*수온 데이터 초기화 액션 내보내기*/
-    selectedObsCode
+    selectedObsCode,
+    isObsModalOpen,
+    selectedStartDate,
+    selectedEndDate,
+    activeObsFeature,
   };
 });
