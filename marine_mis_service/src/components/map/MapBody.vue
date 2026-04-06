@@ -97,17 +97,17 @@ const parseBBox = (bboxStr: string): L.LatLngBoundsExpression | null => {
 // TypeError: Cannot read properties of null (reading 'latLngToLayerPoint') 에러 발생
 watch(() => mapStore.locationToZoom, (location) => {
   if (location && map.value && (map.value as any)._container) {
-    const bounds = parseBBox(location.bbox);
-
     try {
+      // 이동 전 invalidateSize()를 호출하여 지도의 현재 크기를 강제로 재계산하게 함
+      map.value.invalidateSize();
+
+      const bounds = parseBBox(location.bbox);
       if (bounds) {
         map.value.fitBounds(bounds, { padding: [20, 20], maxZoom: 13 });
       } else if (location.centerJson) {
         const center = JSON.parse(location.centerJson);
-        if (center.type === 'Point' && Array.isArray(center.coordinates)) {
-          const [lng, lat] = center.coordinates;
-          map.value.setView([lat, lng], 13);
-        }
+        const [lng, lat] = center.coordinates;
+        map.value.setView([lat, lng], 13);
       }
     } catch (e) {
       console.warn('Map navigation skipped:', e);

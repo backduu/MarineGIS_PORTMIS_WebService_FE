@@ -36,6 +36,9 @@ export function useMapLayers(mapRef: Ref<L.Map | null>) {
     const wfsUrl = `${config.url}?${params.toString()}`;
 
     axios.get(wfsUrl).then(response => {
+      // 비동기로 데이터를 가져온 후 지도가 여전히 유효한지 확인 후 addTo(...) 호출
+      if(!mapInstance || !(mapInstance as any)._container) return;
+
       const geojsonData = response.data;
       const wfsLayer = L.geoJSON(geojsonData, {
         pointToLayer: (feature, latlng) => {
