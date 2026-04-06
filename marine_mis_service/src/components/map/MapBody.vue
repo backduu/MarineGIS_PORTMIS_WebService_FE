@@ -98,6 +98,9 @@ const parseBBox = (bboxStr: string): L.LatLngBoundsExpression | null => {
 watch(() => mapStore.locationToZoom, (location) => {
   if (location && map.value && (map.value as any)._container) {
     try {
+      // 진행 중인 모든 지도 이동 애니메이션 중단
+      map.value.stop();
+
       // 이동 전 invalidateSize()를 호출하여 지도의 현재 크기를 강제로 재계산하게 함
       map.value.invalidateSize();
 

@@ -12,14 +12,24 @@ import axios from 'axios';
 export function useMapLayers(mapRef: Ref<L.Map | null>) {
   const mapStore = useMapStore();
   const toastStore = useToastStore();
-  
   // 생성된 레이어 객체들을 관리 (레이어 ID -> Leaflet 레이어 객체)
   const activeLayers = new Map<string, L.Layer>();
+  // 현재 진행 중인 WFS 요청을 추적하기 위한 Map (중복 요청 방지)
+  const pendingRequests = new Map<string, AbortController>();
 
   /**
+   * 비동기 요청 시 발생할 수 있는 레이스 컨디션을 방지하고, syncLayers에서 기존 WFS 레이어가 있을 경우 재사용합니다.
+   *
    * WFS 데이터를 가져와서 레이어를 만들고 지도에 추가합니다.
    */
-  const createNewWfsLayer = (config: LayerConfig, mapInstance: L.Map) => {
+  const createOrUpdateWfsLayer = async (config: LayerConfig, mapInstance: L.Map) => {
+    // 이전 요청이 있다면 취소 (Optional: axios CancelToken 또는 AbortController 사용 가능)
+    if (pendingRequests.has(config.id)) {
+      pendingRequests.get(config.id)?.abort();
+    }
+    const controller = new AbortController();
+    pendingRequests.set(config.id, controller);
+
     const params = new URLSearchParams({
       service: 'WFS',
       version: config.version || '1.1.0',
@@ -35,35 +45,45 @@ export function useMapLayers(mapRef: Ref<L.Map | null>) {
 
     const wfsUrl = `${config.url}?${params.toString()}`;
 
-    axios.get(wfsUrl).then(response => {
-      // 비동기로 데이터를 가져온 후 지도가 여전히 유효한지 확인 후 addTo(...) 호출
-      if(!mapInstance || !(mapInstance as any)._container) return;
-
+    try {
+      const response = await axios.get(wfsUrl, {signal: controller.signal});
       const geojsonData = response.data;
-      const wfsLayer = L.geoJSON(geojsonData, {
-        pointToLayer: (feature, latlng) => {
-          return L.circleMarker(latlng, {
-            radius: 6,
-            fillColor: "#af146a",
-            color: "#653838",
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.8
-          });
-        },
-        onEachFeature: (feature, layer) => {
-          // 툴팁 설정
-          if (feature.properties.obsvtr_nm) {
-            layer.bindTooltip(feature.properties.obsvtr_nm, {
-              sticky: true,
-              permanent: false,
-              direction: 'top',
-              className: 'custom-tooltip',
-            });
-          }
 
-          // 팝업 설정
-          const popupContent = `
+      // 지도가 파괴되었는지 확인
+      if (!mapInstance || !(mapInstance as any)._container) return;
+
+      let wfsLayer = activeLayers.get(config.id) as L.GeoJSON;
+
+      if (wfsLayer && mapInstance.hasLayer(wfsLayer)) {
+        // [최적화] 기존 레이어가 있다면 데이터를 비우고 새로 넣음
+        wfsLayer.clearLayers();
+        wfsLayer.addData(geojsonData);
+      } else {
+        // 처음 생성하는 경우
+        wfsLayer = L.geoJSON(geojsonData, {
+          pointToLayer: (feature, latlng) => {
+            return L.circleMarker(latlng, {
+              radius: 6,
+              fillColor: "#af146a",
+              color: "#653838",
+              weight: 1,
+              opacity: 1,
+              fillOpacity: 0.8
+            });
+          },
+          onEachFeature: (feature, layer) => {
+            // 툴팁 설정
+            if (feature.properties.obsvtr_nm) {
+              layer.bindTooltip(feature.properties.obsvtr_nm, {
+                sticky: true,
+                permanent: false,
+                direction: 'top',
+                className: 'custom-tooltip',
+              });
+            }
+
+            // 팝업 설정
+            const popupContent = `
             <div style="padding: 10px; min-width: 180px;">
               <h4 style="margin: 0 0 8px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; color: #af146a; font-weight: bold;">
                 ${feature.properties.obsvtr_nm}
@@ -96,21 +116,39 @@ export function useMapLayers(mapRef: Ref<L.Map | null>) {
               </button>
             </div>
           `;
-          layer.bindPopup(popupContent);
+            layer.bindPopup(popupContent);
 
-          // 클릭이벤트
-          layer.on('click', () => {
-            //console.log("선택된 관측소:", feature.properties);
-            // if (feature.properties.obs_code) {
-            //   mapStore.fetchWaterTemp(feature.properties.obs_code);
-            // }
-          });
+            // 클릭이벤트
+            layer.on('click', () => {
+              //console.log("선택된 관측소:", feature.properties);
+              // if (feature.properties.obs_code) {
+              //   mapStore.fetchWaterTemp(feature.properties.obs_code);
+              // }
+            });
+          }
+        });
+        // 지도에 추가하기 직전에 다시 한 번 확인
+        if (mapInstance.hasLayer(wfsLayer)) return;
+
+        try {
+          wfsLayer.addTo(mapInstance);
+          activeLayers.set(config.id, wfsLayer);
+        } catch (e) {
+          console.error('레이어 추가 중 오류 발생:', e);
         }
-      });
-      wfsLayer.addTo(mapInstance);
-      activeLayers.set(config.id, wfsLayer);
-    });
+      }
+    } catch (error: any) {
+      if (error.name === 'CanceledError' || error.name === 'AbortError') {
+        // 요청 취소는 에러로 처리하지 않음
+      } else {
+        console.error('WFS Layer Update Error:', error);
+      }
+    } finally {
+      pendingRequests.delete(config.id);
+    }
   };
+
+
 
   /**
    * 레이어 상태에 따라 지도에 추가하거나 제거합니다.
@@ -124,46 +162,43 @@ export function useMapLayers(mapRef: Ref<L.Map | null>) {
       const isCurrentlyOnMap = activeLayers.has(config.id);
 
       if (config.isOn) {
-        if (!isCurrentlyOnMap) {
-          // 레이어를 켜야 하는데 지도에 없는 경우 추가
+        if (config.type === 'wfs') {
+          // WFS 레이어 최적화: 매번 레이어를 제거하고 생성하는 대신,
+          // createOrUpdateWfsLayer 내부에서 기존 레이어가 있으면 clearLayers() 후 addData()를 수행하도록 수정하여
+          // Leaflet의 latLngToLayerPoint null 에러(레이스 컨디션)를 방지.
+          createOrUpdateWfsLayer(config, mapInstance);
+        } else if (!isCurrentlyOnMap) {
+          // WMS 또는 타일 레이어를 켜야 하는데 지도에 없는 경우 추가
           let newLayer: L.Layer;
 
-          if(config.type === 'wfs') {
-            // WFS 레이어가 처음 활성화될 때 레이어 생성 함수 호출
-            createNewWfsLayer(config, mapInstance);
+          if (config.type === 'wms') {
+            newLayer = GeoServerService.createWmsLayer(config);
+
+            // 타일에러 리바운싱을 적용
+            const lastErrorTime = new Map<string, number>();
+
+            // 인증 실패 및 레이어 불러오기 에러가 발생할때 에러를 표출
+            (newLayer as L.TileLayer.WMS).on('tileerror', (error) => {
+              const now = Date.now();
+              const lastTime = lastErrorTime.get(config.id) || 0;
+
+              // 마지막 에러 발생 후 3초가 지나지 않았다면 toast를 띄우지 않는다. (=> debouncing)
+              if (now - lastTime < 3000) return;
+
+              lastErrorTime.set(
+                config.id,
+                now
+              );
+
+              console.error('WMS tile error:', error);
+              toastStore.addToast(`레이어(${config.name})를 불러오는 중 에러가 발생했습니다.`, 'error');
+            });
           } else {
-            // 레이어를 켜야 하는데 지도에 없는 경우 추가
-            let newLayer: L.Layer;
-
-            if (config.type === 'wms') {
-              newLayer = GeoServerService.createWmsLayer(config);
-
-              // 타일에러 리바운싱을 적용
-              const lastErrorTime = new Map<string, number>();
-
-              // 인증 실패 및 레이어 불러오기 에러가 발생할때 에러를 표출합니다.
-              (newLayer as L.TileLayer.WMS).on('tileerror', (error) => {
-                const now = Date.now();
-                const lastTime = lastErrorTime.get(config.id) || 0;
-
-                // 마지막 에러 발생 후 3초가 지나지 않았다면 toast를 띄우지 않습니다. (=> debouncing)
-                if(now - lastTime < 3000) return;
-
-                lastErrorTime.set(
-                    config.id,
-                    now
-                );
-
-                console.error('WMS tile error:', error);
-                toastStore.addToast(`레이어(${config.name})를 불러오는 중 에러가 발생했습니다.`, 'error');
-              });
-            } else {
-              newLayer = L.tileLayer(config.url, { attribution: config.attribution });
-            }
-
-            newLayer.addTo(mapInstance);
-            activeLayers.set(config.id, newLayer);
+            newLayer = L.tileLayer(config.url, { attribution: config.attribution });
           }
+
+          newLayer.addTo(mapInstance);
+          activeLayers.set(config.id, newLayer);
         } else if (config.type === 'wms') {
           // 이미 지도에 있는 WMS 레이어의 경우 viewparams나 styles가 변경되었을 수 있음
           const existingLayer = activeLayers.get(config.id) as L.TileLayer.WMS;
@@ -178,22 +213,12 @@ export function useMapLayers(mapRef: Ref<L.Map | null>) {
             };
 
             // CQL_FILTER 적용
-            if(config.cqlFilter) {
+            if (config.cqlFilter) {
               params.CQL_FILTER = config.cqlFilter;
             }
 
             existingLayer.setParams(params);
           }
-        } else if (config.type === 'wfs') {
-          // 이미 지도에 WFS 레이어가 있는 상태에서 설정이 변경된 경우엔 기존 레이어를 제거하고 새로운 설정으로 다시 생성하여 실시간으로 지도에 반영되도록 함.
-          const layerToRemove = activeLayers.get(config.id);
-          if(layerToRemove) {
-            mapInstance.removeLayer(layerToRemove);
-            activeLayers.delete(config.id);
-          }
-
-          // 백새로운 설정으로 레이어 재생성
-          createNewWfsLayer(config, mapInstance);
         }
       } else if (!config.isOn && isCurrentlyOnMap) {
         // 레이어를 꺼야 하는데 지도에 있는 경우 제거
