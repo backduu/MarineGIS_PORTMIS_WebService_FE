@@ -177,6 +177,22 @@ export const useMapStore = defineStore('map', () => {
       env: '',
       styles: '',
       cqlFilter: ''
+    },
+    {
+      id: 'ocean_obs_location_wms',
+      name: '조위관측소 위치(WMS)',
+      layers: 'korea_coast:v_obs_locations_geom',
+      format: 'image/png',
+      transparent: true,
+      version: '1.1.1',
+      attribution: 'KHOA Obs Location WMS',
+      isOn: false,
+      type: 'wms',
+      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
+      viewparams: '',
+      env: '',
+      styles: '',
+      cqlFilter: ''
     }
   ]);
 

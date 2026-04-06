@@ -124,6 +124,9 @@ const toggleLayer = (subMenu: any) => {
       } else {
         mapStore.clearWaterTemp();
       }
+
+      // 관측소 실측 수온 토글이 ON일 때만 WMS 레이어(이미지)가 보이도록 설정
+      mapStore.setLayerStatus('ocean_obs_location_wms', { isOn: subMenu.isOn });
     }
 
     /*토글된 메뉴가 레이어 타입인 경우 mapStore의 해당 레이어 상태 업데이트*/
@@ -154,10 +157,20 @@ const handleObsChangeManual = async (selectedValue: string, subMenu: any) => {
   // 선택된 값 저장
   subMenu.value = selectedValue;
 
-  // 선택된 관측소에 따라 지도 레이어 상태를 업데이트
+  //조위관측소 조회 시 WFS로 데이터를 가져옴. 근데 WMS 레이어(이미지)는 '실측 수온' 토글 상태에 따라 표시 여부를 결정
+  const tempSubMenu = menuItems.value.find(m => m.name === '조위 관측소 조회')?.subMenus
+      ?.find(s => typeof s === 'object' && s.value === 'temp') as SubMenuItem;
+  const isTempOn = tempSubMenu?.isOn || false;
+
   if (selectedValue === '전체 관측소') {
+    // WFS 레이어: 데이터 조회용
     mapStore.setLayerStatus('ocean_obs_location', {
       isOn: true,
+      cqlFilter: ''
+    });
+    // WMS 레이어: 이미지(마커) 표시용 (수온 토글 상태에 따름)
+    mapStore.setLayerStatus('ocean_obs_location_wms', {
+      isOn: isTempOn,
       cqlFilter: ''
     });
 
@@ -167,15 +180,17 @@ const handleObsChangeManual = async (selectedValue: string, subMenu: any) => {
     selectedObsLabel.value = '전체 관측소';
     mapStore.selectedObsCode = '';
   } else {
+    // WFS 레이어: 선택된 관측소 데이터 필터링
     mapStore.setLayerStatus('ocean_obs_location', {
       isOn: true,
       cqlFilter: `obsvtr_nm = '${selectedValue}'`
     });
+    // WMS 레이어: 선택된 관측소 이미지 필터링 (수온 토글 상태에 따름)
+    mapStore.setLayerStatus('ocean_obs_location_wms', {
+      isOn: isTempOn,
+      cqlFilter: `obsvtr_nm = '${selectedValue}'`
+    });
     console.log(`Selected observatory: ${selectedValue}`);
-    
-    // API 호출 시 페이징 파라미터 적용
-    // const location = await observatoryLocationService.getObservationLocation(1, 10);
-    // console.log('API Response:', location);
   }
 };
 
