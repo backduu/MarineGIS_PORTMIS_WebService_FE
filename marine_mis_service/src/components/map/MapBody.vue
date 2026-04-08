@@ -5,8 +5,14 @@
  */
 import { onMounted, ref, onBeforeUnmount, watch, type Ref } from 'vue';
 import L from 'leaflet'; // Leaflet 핵심 라이브러리
-import 'proj4';
+import proj4 from 'proj4';
 import 'proj4leaflet';
+
+// proj4leaflet이 전역 L과 proj4를 찾기 때문에 할당이 필요
+if (typeof window !== 'undefined') {
+  (window as any).L = L;
+  (window as any).proj4 = proj4;
+}
 import 'leaflet/dist/leaflet.css'; // Leaflet 기본 스타일 (마커, 팝업 등 표시용)
 import { useMapLayers } from '@/composables/useMapLayers';
 import { useMapStore } from '@/store/useMapStore';
