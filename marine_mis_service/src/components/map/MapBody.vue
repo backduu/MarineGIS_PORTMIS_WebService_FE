@@ -100,10 +100,23 @@ const parseBBox = (bboxStr: string): L.LatLngBoundsExpression | null => {
 };
 
 // 지역 위치 정보가 변경되면 해당 위치로 지도 이동
-// TypeError: Cannot read properties of null (reading 'latLngToLayerPoint') 에러 발생
+// 줌인/아웃 시 latLngToLayerPoint 등 projection 관련 TypeError 방지를 위해
+// 지도 인스턴스의 유효성(getSize, _loaded)을 더욱 엄격하게 검사하도록 수정
 watch(() => mapStore.locationToZoom, (location) => {
   if (location && map.value && (map.value as any)._container) {
     try {
+      // 지도 인스턴스가 존재하고, 컨테이너가 연결되어 있으며, 
+      // 실제 크기가 계산되었고(_loaded), 화면에 렌더링된 상태(getSize().x > 0)인지 확인
+      const isMapReady = map.value && 
+                         (map.value as any)._container && 
+                         (map.value as any)._loaded && 
+                         map.value.getSize().x > 0;
+
+      if (!isMapReady) {
+        console.warn('Map navigation skipped: map is not ready or not loaded');
+        return;
+      }
+
       // 진행 중인 모든 지도 이동 애니메이션 중단
       map.value.stop();
 
@@ -111,6 +124,7 @@ watch(() => mapStore.locationToZoom, (location) => {
       map.value.invalidateSize();
 
       const bounds = parseBBox(location.bbox);
+
       if (bounds) {
         map.value.fitBounds(bounds, { padding: [20, 20], maxZoom: 13 });
       } else if (location.centerJson) {
@@ -119,31 +133,8 @@ watch(() => mapStore.locationToZoom, (location) => {
         map.value.setView([lat, lng], 13);
       }
     } catch (e) {
-      console.warn('Map navigation skipped:', e);
+      console.warn('Map navigation skipped due to error:', e);
     }
-
-    // 이동 완료 후 처리를 위한 공통 로직
-    // const afterMove = () => {
-    //   if(map.value) {
-    //     // 지도 크기 다시 계산하고 렌더링한다.
-    //     map.value.invalidateSize();
-    //   }
-    // }
-    // if (bounds) {
-    //   // 자동으로 해당 좌표에 이동
-    //   map.value.fitBounds(bounds, { padding: [20, 20], maxZoom: 13 });
-    // } else if (location.centerJson) {
-    //   // BBOX 파싱 실패 시 중심점(GeoJSON) 사용 시도
-    //   try {
-    //     const center = JSON.parse(location.centerJson);
-    //     if (center.type === 'Point' && Array.isArray(center.coordinates)) {
-    //       const [lng, lat] = center.coordinates;
-    //       map.value.setView([lat, lng], 13);
-    //     }
-    //   } catch (e) {
-    //     console.error('Failed to parse centerJson:', e);
-    //   }
-    // }
   }
 });
 
@@ -151,16 +142,22 @@ watch(() => mapStore.locationToZoom, (location) => {
 watch(() => mapStore.resetTrigger, () => {
   /*map.value가 null이더라도 getCenter 에러가 발생할 수 있는 레이스 컨디션 방지*/
   /*모드 전환 시에는 initMap()이 지도를 새로 그리기 때문에 별도의 setView 호출이 불필요하며 에러를 유발할 수 있음*/
-  if (map.value && (map.value as any)._container) {
+  // latLngToLayerPoint 등 좌표 변환 에러 방지를 위해 _loaded 상태 추가 확인
+  const isMapReady = map.value && 
+                     (map.value as any)._container && 
+                     (map.value as any)._loaded && 
+                     map.value.getSize().x > 0;
+  
+  if (isMapReady) {
     try {
       /*팝업을 닫고 지도의 위치와 줌 레벨을 초기 상태로 되돌림*/
-      map.value.closePopup();
+      map.value!.closePopup();
       
-      // 현재 지도 인스턴스가 유효한지(삭제되지 않았는지) 한 번 더 확인
+      // 지도 리셋 시 유효성 검사
       if (mapStore.viewMode === 'coastal') {
-        map.value.setView([36.5, 127.5], 7);
+        map.value!.setView([36.5, 127.5], 7);
       } else {
-        map.value.setView([36, 127], 5); /*개방해 모드 초기 위치*/
+        map.value!.setView([36, 127], 5); /*개방해 모드 초기 위치*/
       }
     } catch (e) {
       console.warn('Map reset skipped due to instance state:', e);
