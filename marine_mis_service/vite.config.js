@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue' // Vite에서 Vue SFC(.vue 파일)를 지�
 import tailwindcss from '@tailwindcss/vite' // Tailwind CSS 통합 플러그인
 import path from 'path' // 경로 처리를 위한 Node.js 내장 모듈
 import { fileURLToPath } from 'url' // ESM 환경에서 파일 URL을 경로로 변환하기 위한 모듈
+import cesium from 'vite-plugin-cesium';
 
 // ESM 환경에서는 __dirname이 기본 제공되지 않으므로 직접 정의함
 const __filename = fileURLToPath(import.meta.url)
@@ -13,6 +14,7 @@ export default defineConfig({
   plugins: [
     vue(), // Vue 플러그인 활성화
     tailwindcss(), // Tailwind CSS 플러그인 활성화
+    cesium()
   ],
   resolve: {
     alias: {

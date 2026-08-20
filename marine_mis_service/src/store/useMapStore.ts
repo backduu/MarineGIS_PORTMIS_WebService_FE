@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { regionService, type Region, type RegionLocation } from '@/services/regionService';
 import {observatoryLocationService, observatoryService, type WaterTempItem} from '@/services/observatoryService';
 
 export interface LayerConfig {
@@ -21,13 +20,7 @@ export interface LayerConfig {
 }
 
 export const useMapStore = defineStore('map', () => {
-  const currentSearchVal = ref('');
-  const currentStyleMode = ref<'default' | 'analysis'>('default');
-  const regions = ref<Region[]>([]);
-  const locationToZoom = ref<RegionLocation | null>(null);
-  const viewMode = ref<'coastal' | 'open-sea'>('coastal');
-  const baseMapMode = ref<'BASEMAP_RLTM3857' | 'BASEMAP_ENC573857'>('BASEMAP_RLTM3857'); /*개방해 모드에서 사용할 베이스맵 타입 관리*/
-  const resetTrigger = ref(0); // 로그아웃 시 컴포넌트에 초기화 신호를 보내기 위한 변수
+  const viewMode = ref<'3d-globe'>('3d-globe');
   const waterTempData = ref<WaterTempItem[]>([]);
   const obsLocations = ref<any[]>([]);
   const obsCurrentPage = ref(1);
@@ -39,17 +32,6 @@ export const useMapStore = defineStore('map', () => {
   const selectedStartDate = ref(new Date().toISOString().split('T')[0]); // 조위관측소 모달창 관련, 기본값 오늘
   const selectedEndDate = ref(new Date().toISOString().split('T')[0]); // 조위관측소 모달창 관련, 기본값 오늘
   const activeObsFeature = ref<any>(null); // active된 관측소 정보 저장할 상태
-
-  const fetchRegions = async () => {
-    regions.value = await regionService.getRegions();
-  };
-
-  const fetchRegionLocation = async (sggNam: string) => {
-    const location = await regionService.getRegionLocation(sggNam);
-    if (location) {
-      locationToZoom.value = location;
-    }
-  };
 
   const fetchNextObservatoryLocations = async () => {
     if (isLoadingObs.value || !hasMoreObs.value) return;
@@ -116,103 +98,7 @@ export const useMapStore = defineStore('map', () => {
     waterTempData.value = [];
   };
 
-  const layers = ref<LayerConfig[]>([
-    {
-      id: 'korea_coastline',
-      name: '해안선 레이어(WMS)',
-      layers: 'korea_coast:all_countries_coastline_2025',
-      format: 'image/png',
-      transparent: true,
-      version: '1.1.1',
-      attribution: 'Korea Coast WMS',
-      isOn: false,
-      type: 'wms',
-      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
-      viewparams: '',
-      env: '',
-      styles: ''
-    },
-    {
-      id: 'coastline_popup',
-      name: '해안선 팝업 레이어',
-      layers: 'korea_coast:viewCoastline_popup',
-      format: 'image/png',
-      transparent: true,
-      version: '1.1.1',
-      attribution: 'Korea Coast Popup',
-      isOn: false,
-      type: 'wms',
-      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
-      viewparams: '',
-      env: '',
-      styles: ''
-    },
-    {
-      id: 'ocean_obs_water_temp',
-      name: '조위관측소 실측 수온',
-      layers: 'korea_coast:v_tide_obs_geom',
-      format: 'image/png',
-      transparent: true,
-      version: '1.1.1',
-      attribution: 'KHOA Obs Water Temp',
-      isOn: false,
-      type: 'wms',
-      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
-      viewparams: '',
-      env: '',
-      styles: ''
-    },
-    {
-      id: 'ocean_obs_location',
-      name: '조위관측소 위치',
-      layers: 'korea_coast:v_obs_locations_geom',
-      format: 'application/json',
-      transparent: true,
-      version: '1.0.0',
-      attribution: 'KHOA Obs Location',
-      isOn: false,
-      type: 'wfs',
-      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wfs',
-      viewparams: '',
-      env: '',
-      styles: '',
-      cqlFilter: ''
-    },
-    {
-      id: 'ocean_obs_location_wms',
-      name: '조위관측소 위치(WMS)',
-      layers: 'korea_coast:v_obs_locations_geom',
-      format: 'image/png',
-      transparent: true,
-      version: '1.1.1',
-      attribution: 'KHOA Obs Location WMS',
-      isOn: false,
-      type: 'wms',
-      url: 'http://127.0.0.1:8020/geoserver/korea_coast/wms',
-      viewparams: '',
-      env: '',
-      styles: '',
-      cqlFilter: ''
-    }
-  ]);
-
-  const updateViewParams = (searchVal?: string) => {
-    if (searchVal !== undefined) currentSearchVal.value = searchVal
-
-    const newEnv = `search_val:${currentSearchVal.value}`;
-    setLayerStatus('korea_coastline', { viewparams: '', env: newEnv });
-  };
-
-  const setStyleMode = (mode: 'default' | 'analysis') => {
-    currentStyleMode.value = mode;
-    const styleName = mode === 'analysis' ? 'coastline_analysis_style' : '';
-    // 수심별 해안선 모드가 켜지면 레이어도 켬, 꺼지면 레이어도 끔
-    const isOn = mode === 'analysis';
-    setLayerStatus('korea_coastline', { styles: styleName, isOn });
-    
-    // 팝업용 SQL View 레이어도 함께 토글
-    setLayerStatus('coastline_popup', { isOn });
-  };
+  const layers = ref<LayerConfig[]>([]);
 
   // Partial<LayerConfig>를 사용하여 원하는 필드만 넘길 수 있게 함.
   const setLayerStatus = (layerId: string, updates: Partial<LayerConfig>) => {
@@ -221,35 +107,6 @@ export const useMapStore = defineStore('map', () => {
       // 기존 객체에 새로운 변경사항을 덮어씌움 (Spread 배열 사용)
       layers.value[index] = { ...layers.value[index], ...updates };
     }
-  };
-
-  /* 해안선 모드와 개방해 모드를 전환하는 함수*/
-  const setViewMode = (mode: 'coastal' | 'open-sea') => {
-    /* 모드 전환 시 이전 모드의 상태들을 초기화*/
-    if (viewMode.value !== mode) {
-      currentSearchVal.value = '';
-      currentStyleMode.value = 'default';
-      baseMapMode.value = 'BASEMAP_RLTM3857'; /*모드 전환 시 베이스맵 설정도 초기화*/
-      
-      // 모든 레이어 끔 (또는 현재 모드 관련 레이어만 선별적으로 끔)
-      layers.value = layers.value.map(layer => {
-        return {
-          ...layer,
-          isOn: false,
-          viewparams: '',
-          env: '',
-          styles: '',
-          cqlFilter: ''
-        };
-      });
-      
-      resetTrigger.value += 1; // 팝업 닫기 및 지도 위치/줌 초기화 트리거
-      
-      /*모드 전환 시 실측 데이터 초기화*/
-      waterTempData.value = [];
-    }
-    
-    viewMode.value = mode;
   };
 
   const toggleLayer = (layerId: string) => {
@@ -264,15 +121,10 @@ export const useMapStore = defineStore('map', () => {
    * 로그아웃 시 지도의 레이어와 반응형 변수들을 한꺼번에 날려버리기 위해 추가했습니다.
    */
   const resetMapState = () => {
-    currentSearchVal.value = '';
-    currentStyleMode.value = 'default';
-    regions.value = [];
-    locationToZoom.value = null;
-    /* 초기 모드를 해안선 모드로 리셋 */
-    viewMode.value = 'coastal';
-    resetTrigger.value += 1; // 팝업 닫기 등 지도 객체 직접 제어를 위한 트리거
+    /* 초기 모드를 3D Globe 모드로 리셋 */
+    viewMode.value = '3d-globe';
 
-    // 레이어 상태 초기화 (isOn: false 및 필터/스타일 제거)
+    // 레이어 상태 초기화
     layers.value = layers.value.map(layer => ({
       ...layer,
       isOn: false,
@@ -286,32 +138,16 @@ export const useMapStore = defineStore('map', () => {
     waterTempData.value = [];
   };
 
-  const setBaseMapMode = (mode: 'BASEMAP_RLTM3857' | 'BASEMAP_ENC573857') => {
-    baseMapMode.value = mode;
-  }; /*개방해 모드 베이스맵 변경을 위한 액션 추가*/
-
   return {
     layers,
-    currentSearchVal,
-    currentStyleMode,
     toggleLayer,
     setLayerStatus,
-    updateViewParams,
-    setStyleMode,
-    regions,
-    fetchRegions,
-    locationToZoom,
-    fetchRegionLocation,
     viewMode,
-    setViewMode,
-    baseMapMode,
-    setBaseMapMode,
     resetAndFetchObservatoryLocations,
     fetchNextObservatoryLocations,
     isLoadingObs,
     obsLocations,
     resetMapState,
-    resetTrigger,
     waterTempData,     /*수온 데이터 상태 내보내기*/
     fetchWaterTemp,    /*수온 데이터 페치 액션 내보내기*/
     clearWaterTemp,     /*수온 데이터 초기화 액션 내보내기*/
