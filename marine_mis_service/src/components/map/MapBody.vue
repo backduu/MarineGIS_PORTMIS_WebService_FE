@@ -6,6 +6,8 @@ import { onMounted, ref, onBeforeUnmount } from 'vue';
 import * as Cesium from 'cesium';
 import { useMapStore } from '@/store/useMapStore';
 import ObsDetailModal from "@/components/map/ObsDetailModal.vue";
+import { MAJOR_PORTS, type PortLandmark } from "@/constants/ports";
+
 Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ACCESS_TOKEN;
 
 const cesiumViewer = ref<Cesium.Viewer | null>(null);
@@ -35,6 +37,8 @@ const initCesium = () => {
       creditContainer: document.createElement("div") // 크레딧 표시 영역 제거
     });
 
+    addLandmarks(cesiumViewer.value);
+
     // 한국 좌표로 초기 카메라 설정 (Cesium은 라디안 단위 사용)
     cesiumViewer.value.camera.setView({
       destination: Cesium.Cartesian3.fromDegrees(127.5, 36.5, 1000000.0)
@@ -62,6 +66,33 @@ const resetView = () => {
       easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
     });
   }
+}
+
+// 대표 항만 랜드마크 마킹
+const addLandmarks = (viewer: Cesium.Viewer, portList: PortLandmark[] = MAJOR_PORTS) => {
+  portList.forEach(port => {
+    viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(port.lon, port.lat, port.height ?? 500),
+      label: {
+        text: port.name,
+        font: 'bold 12px sans-serif',
+        fillColor: Cesium.Color.WHITE,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 2,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+        pixelOffset: new Cesium.Cartesian2(0, -10),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      },
+      point: {
+        pixelSize: 8,
+        color: Cesium.Color.fromCssColorString('#3b82f6'),
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 2,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      }
+    })
+  });
 }
 </script>
 
