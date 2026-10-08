@@ -70,6 +70,8 @@ const resetView = () => {
 
 // 대표 항만 랜드마크 마킹
 const addLandmarks = (viewer: Cesium.Viewer, portList: PortLandmark[] = MAJOR_PORTS) => {
+  const baseColor = Cesium.Color.fromCssColorString('#3b82f6');
+
   portList.forEach(port => {
     viewer.entities.add({
       position: Cesium.Cartesian3.fromDegrees(port.lon, port.lat, port.height ?? 500),
@@ -85,13 +87,25 @@ const addLandmarks = (viewer: Cesium.Viewer, portList: PortLandmark[] = MAJOR_PO
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       },
       point: {
-        pixelSize: 8,
-        color: Cesium.Color.fromCssColorString('#3b82f6'),
+        pixelSize: new Cesium.CallbackProperty((time) => {
+          const seconds = time.secondsOfDay;
+          const pulse = Math.abs(Math.sin(seconds * 2.5)); // 속도 조절
+          return 8 + pulse * 10;
+        }, false),
+        color: new Cesium.CallbackProperty((time) => {
+          const seconds = time.secondsOfDay;
+          const pulse = Math.abs(Math.sin(seconds * 2.5));
+          return baseColor.withAlpha(0.6 + pulse * 0.4); // 0.6 ~ 1.0 사이 투명도
+        }, false),
         outlineColor: Cesium.Color.WHITE,
-        outlineWidth: 2,
+        outlineWidth: new Cesium.CallbackProperty((time) => {
+          const seconds = time.secondsOfDay;
+          return 1 + Math.abs(Math.sin(seconds * 2.5)) * 2;
+        }, false),
+
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       }
-    })
+    });
   });
 }
 </script>
