@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'; // 상태 관리를 위한 Pinia 인스턴�
 import router from './router';
 import App from './App.vue'; // 최상위 루트 컴포넌트
 import './index.css'; // 글로벌 스타일시트 (Tailwind CSS 포함)
+import 'cesium/Build/Cesium/Widgets/widgets.css'; // Cesium 기본 위젯 스타일
 
 // Vue 애플리케이션 인스턴스 생성
 const app = createApp(App);

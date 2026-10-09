@@ -8,7 +8,12 @@ import { useMapStore } from '@/store/useMapStore';
 import ObsDetailModal from "@/components/map/ObsDetailModal.vue";
 import { MAJOR_PORTS, type PortLandmark } from "@/constants/ports";
 
-Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ACCESS_TOKEN;
+const ION_TOKEN = import.meta.env.VITE_CESIUM_ACCESS_TOKEN as string | undefined;
+if (!ION_TOKEN) {
+  console.warn('[Cesium] VITE_CESIUM_ACCESS_TOKEN is not set. Initializing without world terrain.');
+} else {
+  Cesium.Ion.defaultAccessToken = ION_TOKEN;
+}
 
 const cesiumViewer = ref<Cesium.Viewer | null>(null);
 const cesiumContainer = ref<HTMLElement | null>(null);
@@ -22,7 +27,7 @@ const initCesium = () => {
 
   if (cesiumContainer.value) {
     cesiumViewer.value = new Cesium.Viewer(cesiumContainer.value, {
-      terrain: Cesium.Terrain.fromWorldTerrain(),
+      terrain: ION_TOKEN ? Cesium.Terrain.fromWorldTerrain() : undefined,
       animation: false, // 애니메이션 적용해서 시간 흐름 제어할 수 있게 함
       timeline: false, // 타임라인 바가 나와서 특정 시간대 조회할 수 있게 함
       navigationHelpButton: false, // 도움말 제공 (마우스 활용)
