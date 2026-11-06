@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+/* 사펑 느낌 테마 */
+@theme {
+    --color-cy-bg: #07060f;
+    --color-cy-panel: #0d0b1a;
+    --color-neon-cyan: #00f0ff;
+    --color-neon-pink: #c2306f;
+    --color-neon-yellow: #fcee0a;
+    --font-cyber: "Orbitron", sans-serif;
+    --font-mono-cyber: "Share Tech Mono", monospace;
+}
+
+body { background: var(--color-cy-bg); font-family: var(--font-mono-cyber); }
+
+/* 네온 글로우: text-shadow / box-shadow 둘 다 쓸 수 있게 */
+@utility glow-cyan { box-shadow: 0 0 8px #00f0ff88, inset 0 0 8px #00f0ff22; }
+@utility glow-pink { box-shadow: 0 0 6px #c2306f44, inset 0 0 6px #c2306f11; }
+@utility text-glow-cyan { text-shadow: 0 0 6px #00f0ff; }
+
+/* 우상단·좌하단이 잘린 패널 */
+@utility cut-corners {
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}

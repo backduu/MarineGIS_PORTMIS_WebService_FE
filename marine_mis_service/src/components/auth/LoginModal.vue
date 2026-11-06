@@ -68,19 +68,19 @@ const closeGreeting = () => {
   <!-- Modal Overlay -->
   <div 
     v-if="isOpen" 
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
   >
     <!-- Modal Content -->
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform transition-all animate-fade-in">
+    <div class="bg-cy-panel w-full max-w-md border border-neon-cyan glow-cyan font-mono-cyber text-neon-cyan/80 overflow-hidden transform transition-all animate-fade-in">
       <!-- Header -->
-      <div class="bg-blue-900 p-6 text-white flex justify-between items-center">
-        <h2 class="text-xl font-bold flex items-center gap-2">
+      <div class="bg-cy-bg border-b border-neon-cyan/40 p-6 text-neon-cyan flex justify-between items-center">
+        <h2 class="font-cyber text-xl font-bold uppercase tracking-[0.25em] text-glow-cyan flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-2-2m0 0l2-2m-2 2h8m-9 3h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
           로그인
         </h2>
-        <button @click="closeGreeting" class="text-blue-200 hover:text-white transition">
+        <button @click="closeGreeting" class="text-neon-cyan/70 hover:text-neon-pink transition">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -91,29 +91,29 @@ const closeGreeting = () => {
       <div class="p-8">
         <form @submit.prevent="handleLogin" class="space-y-6">
           <div>
-            <label for="username" class="block text-sm font-semibold text-gray-700 mb-1">아이디</label>
-            <input 
+            <label for="username" class="block text-xs font-semibold uppercase tracking-widest text-neon-cyan mb-1">아이디</label>
+            <input
               v-model="loginForm.username"
-              type="text" 
+              type="text"
               id="username"
               placeholder="아이디를 입력하세요"
-              class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              class="w-full px-4 py-3 bg-cy-bg text-neon-cyan placeholder:text-neon-cyan/30 border border-neon-cyan/40 focus:border-neon-pink focus:glow-pink outline-none transition"
               required
             />
           </div>
           <div>
-            <label for="password" class="block text-sm font-semibold text-gray-700 mb-1">비밀번호</label>
-            <input 
+            <label for="password" class="block text-xs font-semibold uppercase tracking-widest text-neon-cyan mb-1">비밀번호</label>
+            <input
               v-model="loginForm.password"
-              type="password" 
+              type="password"
               id="password"
               placeholder="비밀번호를 입력하세요"
-              class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              class="w-full px-4 py-3 bg-cy-bg text-neon-cyan placeholder:text-neon-cyan/30 border border-neon-cyan/40 focus:border-neon-pink focus:glow-pink outline-none transition"
               required
             />
           </div>
 
-          <div v-if="errorMessage" class="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2 animate-shake">
+          <div v-if="errorMessage" class="bg-neon-pink/10 text-neon-pink border border-neon-pink/60 p-3 text-sm flex items-center gap-2 animate-shake">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
             </svg>
@@ -123,7 +123,7 @@ const closeGreeting = () => {
           <button 
             type="submit"
             :disabled="isLoading"
-            class="w-full bg-blue-900 text-white font-bold py-3 rounded-lg hover:bg-blue-800 transition transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg flex justify-center items-center"
+            class="w-full bg-neon-cyan text-black font-bold uppercase tracking-widest py-3 glow-cyan hover:bg-neon-pink hover:text-white hover:glow-pink transition transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
           >
             <svg v-if="isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -133,10 +133,10 @@ const closeGreeting = () => {
           </button>
         </form>
 
-        <div class="mt-8 pt-6 border-t border-gray-100 flex justify-between items-center text-sm">
-          <a href="#" class="text-blue-600 hover:underline">비밀번호를 잊으셨나요?</a>
-          <span class="text-gray-400">|</span>
-          <button @click="$emit('close')" class="text-gray-600 hover:text-blue-600">회원가입</button>
+        <div class="mt-8 pt-6 border-t border-neon-cyan/20 flex justify-between items-center text-sm">
+          <a href="#" class="text-neon-cyan/70 hover:text-neon-pink hover:underline">비밀번호를 잊으셨나요?</a>
+          <span class="text-neon-cyan/30">|</span>
+          <button @click="$emit('close')" class="text-neon-cyan/70 hover:text-neon-pink">회원가입</button>
         </div>
       </div>
     </div>

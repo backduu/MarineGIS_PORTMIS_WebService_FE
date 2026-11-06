@@ -6,8 +6,8 @@
 </script>
 
 <template>
-  <footer class="bg-gray-800 text-white h-10 flex items-center justify-center text-xs border-t border-gray-700">
-    &copy; 2026 Marine GIS PORTMIS Service. All rights reserved.
+  <footer class="bg-cy-bg text-neon-cyan/60 font-mono-cyber h-10 flex items-center justify-center text-xs tracking-widest border-t border-neon-cyan/30">
+    &copy; 백두'S 블루 프로젝트 By CesiumJS 엔진. All rights reserved.
   </footer>
 </template>
 
