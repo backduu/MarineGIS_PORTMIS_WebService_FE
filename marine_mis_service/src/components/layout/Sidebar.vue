@@ -22,7 +22,7 @@ const getSubMenuName = (subMenu: any) => {
 
 <template>
   <!-- 좌측에 고정된 사이드바 영역 -->
-  <aside class="bg-gray-100 w-64 border-r border-gray-300 flex-shrink-0 flex flex-col">
+  <aside class="absolute top-4 left-4 bottom-4 bg-white/90 backdrop-blur w-64 flex flex-col z-10 rounded-2xl shadow-xl">
     <!-- 사이드바 제목 -->
     <div class="p-4 font-bold border-b border-gray-300">3D Digital Twin</div>
 

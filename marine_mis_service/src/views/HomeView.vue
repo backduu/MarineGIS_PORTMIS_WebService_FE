@@ -4,7 +4,7 @@ import MapBody from '@/components/map/MapBody.vue';
 </script>
 
 <template>
-  <div class="flex flex-1 overflow-hidden">
+  <div class="relative flex flex-1 overflow-hidden">
     <!-- 사이드바 영역 -->
     <Sidebar />
 
