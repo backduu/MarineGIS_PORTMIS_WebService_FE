@@ -6,6 +6,7 @@ import { onMounted, ref, onBeforeUnmount } from 'vue';
 import * as Cesium from 'cesium';
 import { useMapStore } from '@/store/useMapStore';
 import ObsDetailModal from "@/components/map/ObsDetailModal.vue";
+import TimeSlider from "@/components/map/TimeSlider.vue";
 import { MAJOR_PORTS, type PortLandmark } from "@/constants/ports";
 
 const ION_TOKEN = import.meta.env.VITE_CESIUM_ACCESS_TOKEN as string | undefined;
@@ -132,6 +133,8 @@ const addLandmarks = (viewer: Cesium.Viewer, portList: PortLandmark[] = MAJOR_PO
         한국 해역 보기
       </button>
     </div>
+    <!-- 하단 시간 조정 바 -->
+    <TimeSlider />
     <!-- 조위관측소 상세 모달 -->
     <ObsDetailModal />
   </main>

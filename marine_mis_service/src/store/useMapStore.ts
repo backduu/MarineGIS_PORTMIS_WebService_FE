@@ -31,6 +31,9 @@ export const useMapStore = defineStore('map', () => {
   const isObsModalOpen = ref(false); // 조위관측소 모달창 관련
   const selectedStartDate = ref(new Date().toISOString().split('T')[0]); // 조위관측소 모달창 관련, 기본값 오늘
   const selectedEndDate = ref(new Date().toISOString().split('T')[0]); // 조위관측소 모달창 관련, 기본값 오늘
+  const timelineDates = ref(new Date().toISOString().split('T')[0]); // 타임라인 관련 선택 가능한 날짜 배열
+  const timelineIndex = ref(1); // 타임라인 관련 현재 선택된 인덱스
+  const isPlaying = ref(false); // 타임라인 관련 자동 재생 여부
   const activeObsFeature = ref<any>(null); // active된 관측소 정보 저장할 상태
 
   const fetchNextObservatoryLocations = async () => {
