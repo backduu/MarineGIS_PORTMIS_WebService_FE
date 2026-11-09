@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { computed, onBeforeUnmount } from 'vue';
+import { computed, onBeforeUnmount, watch } from 'vue'; // [수정 4] watch 추가
 
 const props = defineProps<{
   dates?: string[];
@@ -9,8 +9,11 @@ const props = defineProps<{
 const index = defineModel<number | undefined>();
 const playing = defineModel<boolean>('playing', { default: false });
 
+// 재생 간격(ms)
+const PLAY_INTERVAL_MS = 1000;
+
 // 타이머 ID 저장 변수
-let timerId: number | null = null;
+let timerId: ReturnType<typeof setInterval> | null = null;
 
 // 로컬 시간 기준 YYYY-MM-DD (toISOString은 UTC라 한국 시간대에서 하루가 어긋날 수 있음)
 const formatDate = (d: Date) => {
@@ -53,39 +56,42 @@ const stepBy = (delta: number) => {
   setIndex(current.value + delta);
 };
 
-const togglePlay = () => {
-  playing.value = !playing.value;
-
-  // 재생 시작
-  if(playing.value) {
-    timerId = setInterval(() => {
-      if(current.value >= lastIndex.value) {
-        playing.value = false;
-        if(timerId !== null) {
-          clearInterval(timerId);
-          timerId = null;
-        }
-      } else {
-        // 다음 날짜로 이동
-        setIndex(current.value + 1);
-      }
-    }, 1000);
-  } else {
-    // 일시정지
-    if(timerId !== null) {
-      clearInterval(timerId);
-      timerId = null;
-    }
-  }
-};
-
-// 컴포넌트가 unmount되기 전에 타이머 정리
-onBeforeUnmount(() => {
-  if(timerId !== null) {
+const stopTimer = () => {
+  if (timerId !== null) {
     clearInterval(timerId);
     timerId = null;
   }
-})
+};
+
+const tick = () => {
+  const next = current.value + 1;
+  setIndex(next);
+  // 마지막 날짜에 도달한 즉시 멈춘다
+  if (next >= lastIndex.value) {
+    playing.value = false;
+  }
+};
+
+watch(
+  playing,
+  (isPlaying) => {
+    stopTimer(); // 중복 타이머 방지: 시작 전에 항상 기존 것부터 정리
+    if (isPlaying) {
+      if (current.value >= lastIndex.value) {
+        setIndex(0);
+      }
+      timerId = setInterval(tick, PLAY_INTERVAL_MS);
+    }
+  },
+  { immediate: true }, // 부모가 처음부터 playing=true 로 넘겨도 동작하게
+);
+
+const togglePlay = () => {
+  playing.value = !playing.value;
+};
+
+// 컴포넌트가 unmount되기 전에 타이머 정리
+onBeforeUnmount(stopTimer);
 </script>
 
 <template>

@@ -36,6 +36,13 @@ export const useMapStore = defineStore('map', () => {
   const isPlaying = ref(false); // 타임라인 관련 자동 재생 여부
   const activeObsFeature = ref<any>(null); // active된 관측소 정보 저장할 상태
 
+  const getLocalDateString = (date: Date = new Date()) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   const fetchNextObservatoryLocations = async () => {
     if (isLoadingObs.value || !hasMoreObs.value) return;
 
