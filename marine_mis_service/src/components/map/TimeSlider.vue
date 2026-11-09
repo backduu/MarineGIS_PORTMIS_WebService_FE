@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { computed } from 'vue';
+import { computed, onBeforeUnmount } from 'vue';
 
 const props = defineProps<{
   dates?: string[];
@@ -8,6 +8,9 @@ const props = defineProps<{
 
 const index = defineModel<number | undefined>();
 const playing = defineModel<boolean>('playing', { default: false });
+
+// 타이머 ID 저장 변수
+let timerId: number | null = null;
 
 // 로컬 시간 기준 YYYY-MM-DD (toISOString은 UTC라 한국 시간대에서 하루가 어긋날 수 있음)
 const formatDate = (d: Date) => {
@@ -51,21 +54,50 @@ const stepBy = (delta: number) => {
 };
 
 const togglePlay = () => {
-  // TODO(3단계): playing이 true가 되면 setInterval로 다음 날짜로 이동, 끝에 도달하면 멈추기
   playing.value = !playing.value;
+
+  // 재생 시작
+  if(playing.value) {
+    timerId = setInterval(() => {
+      if(current.value >= lastIndex.value) {
+        playing.value = false;
+        if(timerId !== null) {
+          clearInterval(timerId);
+          timerId = null;
+        }
+      } else {
+        // 다음 날짜로 이동
+        setIndex(current.value + 1);
+      }
+    }, 1000);
+  } else {
+    // 일시정지
+    if(timerId !== null) {
+      clearInterval(timerId);
+      timerId = null;
+    }
+  }
 };
+
+// 컴포넌트가 unmount되기 전에 타이머 정리
+onBeforeUnmount(() => {
+  if(timerId !== null) {
+    clearInterval(timerId);
+    timerId = null;
+  }
+})
 </script>
 
 <template>
   <section
-    class="absolute bottom-4 left-[18rem] right-6 z-10 bg-cy-panel/85 backdrop-blur border border-neon-cyan/50 glow-cyan font-mono-cyber text-neon-cyan/80 px-5 py-3 select-none"
+    class="absolute bottom-4 left-[18rem] right-6 mx-auto max-w-xl z-10 bg-cy-panel/85 backdrop-blur border border-neon-cyan/50 glow-cyan font-mono-cyber text-neon-cyan/80 px-3 py-2 select-none"
   >
     <!-- 상단 네온 라인 -->
     <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-neon-cyan via-neon-pink to-transparent"></div>
 
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-3">
       <!-- 컨트롤 버튼 -->
-      <div class="flex items-center gap-1.5">
+      <div class="flex items-center gap-1">
         <button
           type="button"
           :disabled="!canPrev"
@@ -79,7 +111,7 @@ const togglePlay = () => {
         <button
           type="button"
           @click="togglePlay"
-          class="ctrl-btn w-10"
+          class="ctrl-btn"
           :class="{ 'ctrl-btn-active': playing }"
           :aria-label="playing ? '일시정지' : '재생'"
         >
@@ -99,20 +131,9 @@ const togglePlay = () => {
       </div>
 
       <!-- 현재 날짜 -->
-      <div class="flex items-baseline gap-3">
-        <span class="text-[10px] uppercase tracking-[0.3em] text-neon-cyan/50">Date</span>
-        <span class="font-cyber text-lg font-bold tracking-widest text-neon-cyan text-glow-cyan">{{ currentDate }}</span>
-      </div>
+      <span class="font-cyber text-xs font-bold tracking-wider text-neon-cyan text-glow-cyan whitespace-nowrap">{{ currentDate }}</span>
 
-      <!-- 진행 상태 -->
-      <div class="ml-auto text-xs uppercase tracking-widest text-neon-yellow/80">
-        {{ current + 1 }} / {{ dateList.length }}
-      </div>
-    </div>
-
-    <!-- 슬라이더 -->
-    <div class="mt-3 flex items-center gap-3">
-      <span class="text-[10px] tracking-widest text-neon-cyan/50">{{ dateList[0] }}</span>
+      <!-- 슬라이더 -->
       <input
         type="range"
         class="time-range flex-1"
@@ -124,7 +145,6 @@ const togglePlay = () => {
         aria-label="날짜 선택"
         @input="onSliderInput"
       />
-      <span class="text-[10px] tracking-widest text-neon-cyan/50">{{ dateList[lastIndex] }}</span>
     </div>
   </section>
 </template>
@@ -135,8 +155,8 @@ const togglePlay = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 2rem;
-  width: 2rem;
+  height: 1.5rem;
+  width: 1.5rem;
   border: 1px solid var(--color-neon-cyan, #00f0ff);
   color: var(--color-neon-cyan, #00f0ff);
   transition: all 0.2s;
